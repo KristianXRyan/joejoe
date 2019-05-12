@@ -97,6 +97,8 @@
     (define-key map (kbd "C-k l") 'joe/goto-abosolute-line)
 
     ;; buffer manipulation
+    (define-key map (kbd "C-k e") 'find-file)
+    (define-key map (kbd "C-k C-e") 'find-file)
     (define-key map (kbd "C-y") 'kill-whole-line)
     (define-key map (kbd "C-j") 'kill-line)
     (define-key map (kbd "C-[ C-o") 'kill-line) ;; TODO
@@ -117,10 +119,10 @@
 	(define-key map (kbd "C-k C-c") 'joe/delete-window)
 	(define-key map (kbd "C-k c") 'joe/delete-window)
     (define-key map (kbd "C-k C-o") 'split-window-vertically)
-	(define-key map (kbd "C-k b") 'kill-buffer)
-	(define-key map (kbd "C-k n") 'other-window)
-	(define-key map (kbd "C-k C-b") 'kill-buffer) ;; ???
-	(define-key map (kbd "C-k C-n") 'other-window)
+    (define-key map (kbd "C-k b") 'kill-buffer)
+    (define-key map (kbd "C-k n") 'other-window)
+    (define-key map (kbd "C-k C-b") 'kill-buffer) ;; ???
+    (define-key map (kbd "C-k C-n") 'other-window)
     (define-key map (kbd "C-k C-d") 'joe/save-file)
     (define-key map (kbd "C-k d") 'joe/save-file)
     (define-key map (kbd "C-k g") 'enlarge-window)
@@ -130,9 +132,9 @@
     
     ;; additions for features that joe does not support
     (define-key map (kbd "M-+")  'text-scale-increase)
-	(define-key map (kbd "M--")  'text-scale-decrease)
+    (define-key map (kbd "M--")  'text-scale-decrease)
     (define-key map (kbd "C-k ;") 'split-window-horizontally)
-	(define-key map (kbd "C-k C-;") 'split-window-horizontally)
+    (define-key map (kbd "C-k C-;") 'split-window-horizontally)
 
     ;; region
     (define-key map (kbd "<C-right>") 'highlight)
