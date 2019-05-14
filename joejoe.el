@@ -141,8 +141,8 @@
   "A minor mode so that my key settings override annoying major modes."
   :init-value nil
   :lighter " joe"
-  :global t
-
+  nil
+  
   ;;; setting default Emacs behaviour
 
   ;; smooth scroll.
