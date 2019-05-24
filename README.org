@@ -1,2 +1,4 @@
 * Joestar
 Joestar is a minor mode for emacs that seeks to emulate [[https://github.com/jhallen/joe-editor][Joe's Own Editor]], a wordstar-like terminal text editor. 
+* Tutorial
+See

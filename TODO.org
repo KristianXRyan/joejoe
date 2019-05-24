@@ -6,3 +6,5 @@ indentation
 
 * Maybe
 have one master interactive function that calls all of the other functions to keep keybindings local to a function
+
+* orgstar-mode...

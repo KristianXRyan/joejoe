@@ -161,6 +161,10 @@
   (call-interactively 'backward-word)
   (call-interactively 'kill-word))
 
+(defun joe/move-region ()
+  "Move the current region to point."
+  (interactive))
+
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map
   (let ((joe-map (make-sparse-keymap)))
@@ -170,30 +174,43 @@
     (define-key joe-map (kbd "C-v") 'scroll-up)
     (define-key joe-map (kbd "C-e") 'end-of-line)
     (define-key joe-map (kbd "C-a") 'beginning-of-line-text)
-    (define-key joe-map (kbd "C-k u") 'beginning-of-buffer)
+    
     (define-key joe-map (kbd "C-k C-u") 'beginning-of-buffer)
-    (define-key joe-map (kbd "C-k v") 'end-of-buffer)
+    (define-key joe-map (kbd "C-k u") (kbd "C-k C-u"))
+    
     (define-key joe-map (kbd "C-k C-v") 'end-of-buffer)
+    (define-key joe-map (kbd "C-k v") (kbd "C-k C-v"))
+    
     (define-key joe-map (kbd "C-z") 'backward-word)
     (define-key joe-map (kbd "C-x") 'forward-word)
-    (define-key joe-map (kbd "C-k C-l") 'joe/goto-abosolute-line)
-    (define-key joe-map (kbd "C-k l") 'joe/goto-abosolute-line)
+    
+    (define-key joe-map (kbd "C-k C-l") '(lambda (num)
+                                           "Goto absolute line number NUM."
+                                           (interactive "sGo to line: ")
+                                           (forward-line (* -1 (count-lines 1 (point))))
+                                           (forward-line (1- (string-to-number num)))))
+    (define-key joe-map (kbd "C-k l") (kbd "C-k C-l"))
 
     ;; buffer manipulation
-    (define-key joe-map (kbd "C-k e") 'find-file)
     (define-key joe-map (kbd "C-k C-e") 'find-file)
+    (define-key joe-map (kbd "C-k e") (kbd "C-k e"))
     (define-key joe-map (kbd "C-y") 'kill-whole-line)
     (define-key joe-map (kbd "C-j") 'kill-line)
-    (define-key joe-map (kbd "C-[ C-o") 'kill-line) ;; TODO
-    (define-key joe-map (kbd "C-[ o") 'kill-line) ;; TODO
+    
+    (define-key joe-map (kbd "ESC C-o") 'kill-line)
+    (define-key joe-map (kbd "ESC o") (kbd "ESC C-o"))
+    
     (define-key joe-map (kbd "C-w") 'kill-word)
     (define-key joe-map (kbd "C-o") 'joe/kill-prev-word) ;; TODO, Test
     (define-key joe-map (kbd "C-^") 'redo)
     (define-key joe-map (kbd "C-k C-x") 'save-buffers-kill-emacs)
+    (define-key joe-map (kbd "C-k C-x") (kbd "C-k C-x"))
+    
     (define-key joe-map (kbd "C-f") 'search-forward)
     (define-key joe-map (kbd "C-j") 'kill-line)
-    (define-key joe-map (kbd "C-k r") 'joe/insert-file)
     (define-key joe-map (kbd "C-k C-r") 'joe/insert-file)
+    (define-key joe-map (kbd "C-k r") (kbd "C-k C-r"))
+    
     (define-key joe-map (kbd "<backspace>") 'joe/backward-delete-char)
     (define-key joe-map (kbd "<C-right>") 'joe/control-select-right)
     (define-key joe-map (kbd "<C-left>") 'joe/control-select-left)
@@ -203,32 +220,39 @@
     (define-key joe-map (kbd "C-k C-y") 'delete-region)
     (define-key joe-map (kbd "C-k y") (kbd "C-k C-y"))
     
-    (define-key joe-map (kbd "C-k C-m") nil)
+    (define-key joe-map (kbd "C-k C-m") 'joe/move-region)
     (define-key joe-map (kbd "C-k m") (kbd "C-k C-m"))
-
     
     ;; editor manipulation
     (define-key joe-map (kbd "C-c") 'joe/delete-window)
     (define-key joe-map (kbd "C-k o") 'split-window-vertically)
-    (define-key joe-map (kbd "C-k C-c") 'joe/delete-window)
-    (define-key joe-map (kbd "C-k c") 'joe/delete-window)
+    
+    (define-key joe-map (kbd "C-k C-c") 'copy-region-as-kill) ;; TODO test
+    (define-key joe-map (kbd "C-k c") (kbd "C-k C-c"))
+    
     (define-key joe-map (kbd "C-k C-o") 'split-window-vertically)
-    (define-key joe-map (kbd "C-k n") 'joe/next-window)
+    (define-key joe-map (kbd "C-k o") (kbd "C-k C-o"))
+    
     (define-key joe-map (kbd "C-k C-n") 'joe/next-window)
+    (define-key joe-map (kbd "C-k n") (kbd "C-k C-n"))
+    
     (define-key joe-map (kbd "C-k C-p") 'joe/previous-window)
     (define-key joe-map (kbd "C-k p") (kbd "C-k C-p"))
-    (define-key joe-map (kbd "C-k C-d") 'joe/save-file)
-    (define-key joe-map (kbd "C-k d") 'joe/save-file)
-    (define-key joe-map (kbd "C-k g") 'enlarge-window)
-    (define-key joe-map (kbd "C-k C-g") 'enlarge-window)
-    (define-key joe-map (kbd "C-k t") 'shrink-window)
-    (define-key joe-map (kbd "C-k C-t") 'shrink-window)
     
-    ;; additions for features tha
+    (define-key joe-map (kbd "C-k C-d") 'joe/save-file)
+    (define-key joe-map (kbd "C-k d") (kbd "C-c C-d"))
+    
+    (define-key joe-map (kbd "C-k C-g") 'enlarge-window)
+    (define-key joe-map (kbd "C-k g") (kbd "C-k C-g"))
+    
+    (define-key joe-map (kbd "C-k C-t") 'shrink-window)
+    (define-key joe-map (kbd "C-k t") (kbd "C-k C-t"))
+    
+    ;; additions for features that joe does not support.
     (define-key joe-map (kbd "M-+")  'text-scale-increase)
     (define-key joe-map (kbd "M--")  'text-scale-decrease)
-    (define-key joe-map (kbd "C-k ;") 'split-window-horizontally)
     (define-key joe-map (kbd "C-k C-;") 'split-window-horizontally)
+    (define-key joe-map (kbd "C-k ;") (kbd "C-k C-;"))
 
     ;; spellcheck TODO
     joe-map)
