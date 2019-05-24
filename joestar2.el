@@ -13,8 +13,6 @@
 ;;; set mark variables
 
 ;; TODO make a better system
-
-;; TODO make a better system
 (defvar joe-mark-0 nil "Mark 0.")
 (defvar joe-mark-1 nil "Mark 1.")
 (defvar joe-mark-2 nil "Mark 2.")
@@ -37,6 +35,10 @@
 (make-variable-buffer-local 'joe-mark-8)
 (make-variable-buffer-local 'joe-mark-9)
 
+;;; joestar-mode functions:
+
+;; set mark funcs:
+
 ;; TODO function does not work
 (defun joe/setmark (sid)
   "Set the mark SID manually."
@@ -58,7 +60,10 @@
   (message "Mark 1 set."))
 
 
-;; fix bug where ivy does not display the full file-name
+(defun joe/help-me ()
+  "Prints the help documentation in a separate buffer.")
+
+;;; TODO fix bug where ivy does not display the full file-name
 (defun joe/save-file (file-path)
   "Prompt the minibuffer to save the current buffer as FILE-PATH."
   (interactive "FName of file to save: ")
@@ -195,17 +200,15 @@
     (define-key joe-map (kbd "C-k r") 'joe/insert-file)
     (define-key joe-map (kbd "C-k C-r") 'joe/insert-file)
     (define-key joe-map (kbd "<backspace>") 'joe/backward-delete-char)
+    (define-key joe-map (kbd "C-k b") 'joe/begin-selection)
+    (define-key joe-map (kbd "C-k C-b") 'joe/begin-selection)
     (define-key joe-map (kbd "<C-right>") 'joe/control-select-right)
     (define-key joe-map (kbd "<C-left>") 'joe/control-select-left)
     (define-key joe-map (kbd "<C-up>") 'joe/control-select-up)
     (define-key joe-map (kbd "<C-down>") 'joe/control-select-down)
+    (define-key joe-map (kbd "C-y") 'delete-region)
+    (define-key joe-map (kbd "C-m") 'delete-region)
     
-    (define-key joe-map (kbd "C-k C-y") 'delete-region)
-    (define-key joe-map (kbd "C-k y") (kbd "C-k C-y"))
-    
-    (define-key joe-map (kbd "C-k C-m") nil)
-    (define-key joe-map (kbd "C-k m") (kbd "C-k C-m"))
-
     
     ;; editor manipulation
     (define-key joe-map (kbd "C-c") 'joe/delete-window)
