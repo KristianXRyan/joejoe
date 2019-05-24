@@ -8,6 +8,8 @@
 ;;; Code:
 
 ;;; functions to change the behavior of keymaps
+
+;;; TODO fix bug where ivy does not display the full file-name
 (defun joe/save-file (file-path)
   "Prompt the minibuffer to save the current buffer as FILE-PATH."
   (interactive "FName of file to save: ")
@@ -69,9 +71,43 @@
          (let ((backward-delete-char-untabify-method 'hungry))
            (call-interactively 'backward-delete-char-untabify)))))
 
+(defun joe/begin-selection ()
+  "Begin the mark selection."
+  (interactive)
+  (set-mark-command)
+  (keyboard-quit))
 
-;;; setting joejoe's wordstar-like keybindings
-(defvar  joejoe-mode-map
+(defun joe/end-selectioin-and-select ()
+  "End the mark selection and select everything between it and the mark."
+  nil)
+
+(defun joe/control-select-right ()
+  "Control selection to right char."
+  (interactive)
+  (setq this-command-keys-shift-translated t)
+  (call-interactively 'forward-char))
+
+
+(defun joe/control-select-left ()
+  "Control selection to left char."
+  (interactive)
+  (setq this-command-keys-shift-translated t)
+  (call-interactively 'backward-char))
+
+(defun joe/control-select-up ()
+  "Control selection up one line."
+  (interactive)
+  (setq this-command-keys-shift-translated t)
+  (call-interactively 'previous-line))
+
+(defun joe/control-select-down ()
+  "Control selection down one line."
+  (interactive)
+  (setq this-command-keys-shift-translated t)
+  (call-interactively 'next-line))
+
+;;; setting joestar's wordstar-like keybindings
+(defvar  joestar-mode-map
   (let ((joe-map (make-sparse-keymap)))
     
     ;; buffer movement
@@ -104,6 +140,12 @@
     (define-key joe-map (kbd "C-k r") 'joe/insert-file)
     (define-key joe-map (kbd "C-k C-r") 'joe/insert-file)
     (define-key joe-map (kbd "<backspace>") 'joe/backward-delete-char)
+    (define-key joe-map (kbd "C-k b") 'joe/begin-selection)
+    (define-key joe-map (kbd "C-k C-b") 'joe/begin-selection)
+    (define-key joe-map (kbd "<C-right>") 'joe/control-select-right)
+    (define-key joe-map (kbd "<C-left>") 'joe/control-select-left)
+    (define-key joe-map (kbd "<C-up>") 'joe/control-select-up)
+    (define-key joe-map (kbd "<C-down>") 'joe/control-select-down)
     
     ;; editor manipulation
     (define-key joe-map (kbd "C-c") 'joe/delete-window)
@@ -111,9 +153,7 @@
     (define-key joe-map (kbd "C-k C-c") 'joe/delete-window)
     (define-key joe-map (kbd "C-k c") 'joe/delete-window)
     (define-key joe-map (kbd "C-k C-o") 'split-window-vertically)
-    (define-key joe-map (kbd "C-k b") 'kill-buffer)
     (define-key joe-map (kbd "C-k n") 'other-window)
-    (define-key joe-map (kbd "C-k C-b") 'kill-buffer) ;; ???
     (define-key joe-map (kbd "C-k C-n") 'other-window)
     (define-key joe-map (kbd "C-k C-d") 'joe/save-file)
     (define-key joe-map (kbd "C-k d") 'joe/save-file)
@@ -128,16 +168,13 @@
     (define-key joe-map (kbd "C-k ;") 'split-window-horizontally)
     (define-key joe-map (kbd "C-k C-;") 'split-window-horizontally)
 
-    ;; region
-    (define-key joe-map (kbd "<C-right>") 'highlight)
-    
     ;; spellcheck TODO
     joe-map)
-  "The joejoe-mode keymaps.")
+  "The joestar-mode keymaps.")
 
 ;;; defining the minor modes
 
-(define-minor-mode joejoe-mode
+(define-minor-mode joestar-mode
   "A minor mode so that my key settings override annoying major modes."
   :init-value nil
   :lighter " joe"
@@ -158,8 +195,8 @@
   (setq scroll-preserve-screen-position 'always) ;; TODO fix behavior so that it always scrolls perfectly
   (setq scroll-error-top-bottom t))
 
-(define-globalized-minor-mode global-joejoe-mode joejoe-mode
-  (lambda () (joejoe-mode 1)))
+(define-globalized-minor-mode global-joejoe-mode joestar-mode
+  (lambda () (joestar-mode 1)))
 
-(provide 'joejoe)
+(provide 'joestar)
 ;;; joejoe.el ends here
