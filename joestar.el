@@ -9,6 +9,60 @@
 
 ;;; functions to change the behavior of keymaps
 
+
+;;; set mark variables
+
+;; TODO make a better system
+(defvar joe-mark-0 nil "Mark 0.")
+(defvar joe-mark-1 nil "Mark 1.")
+(defvar joe-mark-2 nil "Mark 2.")
+(defvar joe-mark-3 nil "Mark 3.")
+(defvar joe-mark-4 nil "Mark 4.")
+(defvar joe-mark-5 nil "Mark 5.")
+(defvar joe-mark-6 nil "Mark 6.")
+(defvar joe-mark-7 nil "Mark 7.")
+(defvar joe-mark-8 nil "Mark 8.")
+(defvar joe-mark-9 nil "Mark 9.")
+
+(make-variable-buffer-local 'joe-mark-0)
+(make-variable-buffer-local 'joe-mark-1)
+(make-variable-buffer-local 'joe-mark-2)
+(make-variable-buffer-local 'joe-mark-3)
+(make-variable-buffer-local 'joe-mark-4)
+(make-variable-buffer-local 'joe-mark-5)
+(make-variable-buffer-local 'joe-mark-6)
+(make-variable-buffer-local 'joe-mark-7)
+(make-variable-buffer-local 'joe-mark-8)
+(make-variable-buffer-local 'joe-mark-9)
+
+;;; joestar-mode functions:
+
+;; set mark funcs:
+
+;; TODO function does not work
+(defun joe/setmark (sid)
+  "Set the mark SID manually."
+  (interactive "sSet Mark (0-9): ")
+  (let (id (string-to-number sid))
+    (cond ((eq id 0) (joe/set-mark-0))
+          ((eq id 1) (joe/set-mark-1)))))
+
+(defun joe/set-mark-0 ()
+  "Set the 0th mark."
+  (interactive)
+  (setq joe-mark-0 (point-marker))
+  (message "Mark 0 set."))
+
+(defun joe/set-mark-1 ()
+  "Set the 1st mark."
+  (interactive)
+  (setq joe-mark-1 (point-marker))
+  (message "Mark 1 set."))
+
+
+(defun joe/help-me ()
+  "Prints the help documentation in a separate buffer.")
+
 ;;; TODO fix bug where ivy does not display the full file-name
 (defun joe/save-file (file-path)
   "Prompt the minibuffer to save the current buffer as FILE-PATH."
@@ -53,6 +107,16 @@
 
 (defun joe/shrink-window ()
   "Shrink the current window.")
+
+(defun joe/next-window ()
+  "Move to the next window."
+  (interactive)
+  (other-window 1))
+
+(defun joe/previous-window ()
+  "Move to the previous window."
+  (interactive)
+  (other-window -1))
 
 (defun joe/backward-delete-char ()
   "Redefine the what the backspace key does to mimic vim."
@@ -106,6 +170,12 @@
   (setq this-command-keys-shift-translated t)
   (call-interactively 'next-line))
 
+(defun joe/kill-prev-word ()
+  "Kill the word to the left of the cursor."
+  (interactive)
+  (call-interactively 'backward-word)
+  (call-interactively 'kill-word))
+
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map
   (let ((joe-map (make-sparse-keymap)))
@@ -131,8 +201,8 @@
     (define-key joe-map (kbd "C-j") 'kill-line)
     (define-key joe-map (kbd "C-[ C-o") 'kill-line) ;; TODO
     (define-key joe-map (kbd "C-[ o") 'kill-line) ;; TODO
-    (define-key joe-map (kbd "C-W") 'kill-word) ; Test
-    (define-key joe-map (kbd "C-O") 'kill-word) ;; TODO, Test
+    (define-key joe-map (kbd "C-w") 'kill-word)
+    (define-key joe-map (kbd "C-o") 'joe/kill-prev-word) ;; TODO, Test
     (define-key joe-map (kbd "C-^") 'redo)
     (define-key joe-map (kbd "C-k C-x") 'save-buffers-kill-emacs)
     (define-key joe-map (kbd "C-f") 'search-forward)
@@ -146,6 +216,9 @@
     (define-key joe-map (kbd "<C-left>") 'joe/control-select-left)
     (define-key joe-map (kbd "<C-up>") 'joe/control-select-up)
     (define-key joe-map (kbd "<C-down>") 'joe/control-select-down)
+    (define-key joe-map (kbd "C-y") 'delete-region)
+    (define-key joe-map (kbd "C-m") 'delete-region)
+    
     
     ;; editor manipulation
     (define-key joe-map (kbd "C-c") 'joe/delete-window)
@@ -153,8 +226,10 @@
     (define-key joe-map (kbd "C-k C-c") 'joe/delete-window)
     (define-key joe-map (kbd "C-k c") 'joe/delete-window)
     (define-key joe-map (kbd "C-k C-o") 'split-window-vertically)
-    (define-key joe-map (kbd "C-k n") 'other-window)
-    (define-key joe-map (kbd "C-k C-n") 'other-window)
+    (define-key joe-map (kbd "C-k n") 'joe/next-window)
+    (define-key joe-map (kbd "C-k C-n") 'joe/next-window)
+    (define-key joe-map (kbd "C-k C-p") 'joe/previous-window)
+    (define-key joe-map (kbd "C-k p") (kbd "C-k C-p"))
     (define-key joe-map (kbd "C-k C-d") 'joe/save-file)
     (define-key joe-map (kbd "C-k d") 'joe/save-file)
     (define-key joe-map (kbd "C-k g") 'enlarge-window)
@@ -195,8 +270,8 @@
   (setq scroll-preserve-screen-position 'always) ;; TODO fix behavior so that it always scrolls perfectly
   (setq scroll-error-top-bottom t))
 
-(define-globalized-minor-mode global-joejoe-mode joestar-mode
+(define-globalized-minor-mode global-joestar-mode joestar-mode
   (lambda () (joestar-mode 1)))
 
 (provide 'joestar)
-;;; joejoe.el ends here
+;;; joestar.el ends here
