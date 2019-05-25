@@ -12,7 +12,9 @@ In order to fix this, Joestar remaps the three following functions:
 #+END_SRC 
 * Tutorial
 ** A note on Control key sequences
-Because of the way that Joe works *C-k C-e* is the same as *C-k e*, whereas Emacs considers those to be different key sequences. In joestar mode, just like in joe, these are the same sequence.
+Because of the way that Joe works *C-k C-e* is the same as *C-k e*. 
+However, Emacs considers these to be different key sequences. 
+In joestar mode, just like in joe, these are the same sequence.
 ** Help
 Type *C-k h* for help.
 ** Buffer manipulation.
