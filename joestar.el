@@ -95,6 +95,11 @@
     (define-key joe-map (kbd "C-k C-v") 'end-of-buffer)
     (define-key joe-map (kbd "C-k v") (kbd "C-k C-v"))
     
+    (define-key joe-map (kbd "C-k C-f") '(lambda ()
+                                           "Joe-style find function."
+                                           (interactive))) ; TODO
+    (define-key joe-map (kbd "C-k C-f") (kbd "C-k C-f"))
+    
     (define-key joe-map (kbd "C-z") 'backward-word)
     (define-key joe-map (kbd "C-x") 'forward-word)
     
@@ -106,12 +111,13 @@
     (define-key joe-map (kbd "C-k l") (kbd "C-k C-l"))
 
     ;; buffer manipulation
+    (define-key joe-map (kbd "C-k C-a") 'center-line)
+    (define-key joe-map (kbd "C-k a") (kbd "C-k C-a"))
+
     (define-key joe-map (kbd "C-k C-e") 'find-file)
-    (define-key joe-map (kbd "C-k e") (kbd "C-k e"))
-    (define-key joe-map (kbd "C-y") 'kill-whole-line)
+    (define-key joe-map (kbd "C-k e") 'find-file)
     
-    (define-key joe-map (kbd "ESC C-o") 'kill-line)
-    (define-key joe-map (kbd "ESC o") (kbd "ESC C-o"))
+    (define-key joe-map (kbd "C-y") 'kill-whole-line)
     
     (define-key joe-map (kbd "C-w") 'kill-word)
     (define-key joe-map (kbd "C-o") '(lambda ()
@@ -131,11 +137,14 @@
                                        (call-interactively 'undo-tree-undo)))
     
     (define-key joe-map (kbd "C-k C-x") 'save-buffers-kill-emacs)
-    (define-key joe-map (kbd "C-k C-x") (kbd "C-k C-x"))
+    (define-key joe-map (kbd "C-k x") (kbd "C-k C-x"))
+    
+    (define-key joe-map (kbd "C-k C-q") 'kill-emacs)
+    (define-key joe-map (kbd "C-k q") (kbd "C-k C-q"))
     
     (define-key joe-map (kbd "C-f") 'search-forward)
     (define-key joe-map (kbd "C-j") 'kill-line)
-    (define-key joe-map (kbd "ESC o") '(lambda ()
+    (define-key joe-map (kbd "<escape> o") '(lambda ()
                                          "Kill to the beginning of the line before point."
                                          (kill-line 0)))
     
@@ -209,6 +218,9 @@
     
     (define-key joe-map (kbd "C-k C-o") 'split-window-vertically)
     (define-key joe-map (kbd "C-k o") (kbd "C-k C-o"))
+
+    (define-key joe-map (kbd "<escape> n") 'flyspell-word)
+    (define-key joe-map (kbd "<escape> l") 'flyspell-buffer)
     
     (define-key joe-map (kbd "C-k C-n") '(lambda ()
                                            "Move to the next window."
