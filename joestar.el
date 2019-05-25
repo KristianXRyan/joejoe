@@ -4,8 +4,8 @@
 
 ;;; Author: Ryan Jeffrey <pwishie@gmail.com>
 ;;; Keywords: joe wordstar
-;;; Version 0.1
-;;; Package-Requires: ((emacs "24.2"))
+;;; Version 0.2
+;;; Package-Requires: ((emacs "24.2") (undo-tree 0.8.5))
 
 ;;; Commentary:
 
@@ -100,14 +100,15 @@
                                        (interactive)
                                        (call-interactively 'backward-word)
                                        (call-interactively 'kill-word))) ;; TODO, Test
-
     
     (define-key joe-map (kbd "C-^") '(lambda ()
-                                       "Undo-tree redo."
-                                       (call-interactively 'redo)))
+                                       "Calls undo-tree redo."
+                                       (interactive)
+                                       (call-interactively 'undo-tree-redo)))
     (define-key joe-map (kbd "C-_") '(lambda ()
-                                       "Undo-tree undo."
-                                       (call-interactively 'undo)))
+                                       "Calls undo-tree undo."
+                                       (interactive)
+                                       (call-interactively 'undo-tree-undo)))
     
     (define-key joe-map (kbd "C-k C-x") 'save-buffers-kill-emacs)
     (define-key joe-map (kbd "C-k C-x") (kbd "C-k C-x"))
@@ -244,7 +245,27 @@
   ;; keep cursor position while scrolling
   (setq scroll-preserve-screen-position 'always) ; TODO fix behavior so that it always scrolls perfectly
   (setq scroll-error-top-bottom t)
-  )
+  (defvar undo-tree-map
+    (let ((map (make-sparse-keymap)))
+      ;; remap `undo' and `undo-only' to `undo-tree-undo'
+      (define-key map [remap undo] 'undo-tree-undo)
+      (define-key map [remap undo-only] 'undo-tree-undo)
+      ;; bind standard undo bindings (since these match redo counterparts)
+      (define-key map (kbd "C-/") 'undo-tree-undo)
+      (define-key map "\C-_" 'undo-tree-undo)
+      ;; redo doesn't exist normally, so define our own keybindings
+      (define-key map (kbd "C-?") 'undo-tree-redo)
+      (define-key map (kbd "M-_") 'undo-tree-redo)
+      ;; just in case something has defined `redo'...
+      (define-key map [remap redo] 'undo-tree-redo)
+      ;; we use "C-x u" for the undo-tree visualizer
+      (define-key map (kbd "s-x u") 'undo-tree-visualize)
+      ;; bind register commands
+      (define-key map (kbd "s-x r u") 'undo-tree-save-state-to-register)
+      (define-key map (kbd "s-x r U") 'undo-tree-restore-state-from-register)
+      ;; set keymap
+      (setq undo-tree-map map)))
+  (undo-tree-mode t))
 
 (define-globalized-minor-mode global-joestar-mode joestar-mode
   (lambda () (joestar-mode 1)))

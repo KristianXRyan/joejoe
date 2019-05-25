@@ -1,5 +1,15 @@
 * Joestar
 Joestar is a minor mode for emacs that seeks to emulate [[https://github.com/jhallen/joe-editor][Joe's Own Editor]], a wordstar-like terminal text editor. 
+* Joestar and undo-tree
+Joestar depends on undo-tree, which uses C-x for several of its keybindings, which conflicts with Joestar's usage of C-x.
+In order to fix this, Joestar remaps the three following functions:
+#+BEGIN_SRC emacs-lisp
+
+(define-key map (kbd "s-x u") 'undo-tree-visualize)
+(define-key map (kbd "s-x r u") 'undo-tree-save-state-to-register)
+(define-key map (kbd "s-x r U") 'undo-tree-restore-state-from-register)
+
+#+END_SRC 
 * Tutorial
 ** A note on Control key sequences
 Because of the way that Joe works *C-k C-e* is the same as *C-k e*, whereas Emacs considers those to be different key sequences. In joestar mode, just like in joe, these are the same sequence.
