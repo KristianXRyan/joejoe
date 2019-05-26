@@ -17,10 +17,32 @@ However, Emacs considers these to be different key sequences.
 In joestar mode, just like in joe, these are the same sequence.
 ** Help
 Type *C-k h* for help.
-** Buffer manipulation.
-- *C-y*
-Kill the entire line.
-- *C-j*
-Kill the rest of the line from point.
-- *ESC-o*
-Kill the to the beginning of the line from point.
+** Region
+- *C-<arrow>*
+Control selection.
+- *C-k c*
+Copy region.
+- *C-k w*
+Write to file.
+- *C-k y*
+Delete region
+** Goto
+- *C-z*
+Back one word.
+- *C-x*
+Forward one word.
+- *C-k C-u*
+Top of file.
+- *C-k C-v*
+End of file.
+- *C-a*
+Beginning of line (first non-indentation character).
+- *C-e*
+End of line.
+- *C-k l*
+To line number.
+- *C-u*
+Up one screen.
+- *C-v*
+Down one screen.
+

@@ -82,94 +82,7 @@
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map
   (let ((joe-map (make-sparse-keymap)))
-    
-    ;; buffer movement
-    (define-key joe-map (kbd "C-u") 'scroll-down)
-    (define-key joe-map (kbd "C-v") 'scroll-up)
-    (define-key joe-map (kbd "C-e") 'end-of-line)
-    (define-key joe-map (kbd "C-a") 'beginning-of-line-text)
-    
-    (define-key joe-map (kbd "C-k C-u") 'beginning-of-buffer)
-    (define-key joe-map (kbd "C-k u") (kbd "C-k C-u"))
-    
-    (define-key joe-map (kbd "C-k C-v") 'end-of-buffer)
-    (define-key joe-map (kbd "C-k v") (kbd "C-k C-v"))
-    
-    (define-key joe-map (kbd "C-k C-f") '(lambda ()
-                                           "Joe-style find function."
-                                           (interactive))) ; TODO
-    (define-key joe-map (kbd "C-k C-f") (kbd "C-k C-f"))
-    
-    (define-key joe-map (kbd "C-z") 'backward-word)
-    (define-key joe-map (kbd "C-x") 'forward-word)
-    
-    (define-key joe-map (kbd "C-k C-l") '(lambda (num)
-                                           "Goto absolute line number NUM."
-                                           (interactive "sGo to line: ")
-                                           (forward-line (* -1 (count-lines 1 (point))))
-                                           (forward-line (1- (string-to-number num)))))
-    (define-key joe-map (kbd "C-k l") (kbd "C-k C-l"))
-
-    ;; buffer manipulation
-    (define-key joe-map (kbd "C-k C-a") 'center-line)
-    (define-key joe-map (kbd "C-k a") (kbd "C-k C-a"))
-
-    (define-key joe-map (kbd "C-k C-e") 'find-file)
-    (define-key joe-map (kbd "C-k e") 'find-file)
-    
-    (define-key joe-map (kbd "C-y") 'kill-whole-line)
-    
-    (define-key joe-map (kbd "C-w") 'kill-word)
-    (define-key joe-map (kbd "C-o") '(lambda ()
-                                       "Kill the word before point."
-                                       "Kill the word to the left of the cursor."
-                                       (interactive)
-                                       (call-interactively 'backward-word)
-                                       (call-interactively 'kill-word))) ;; TODO, Test
-    
-    (define-key joe-map (kbd "C-^") '(lambda ()
-                                       "Calls undo-tree redo."
-                                       (interactive)
-                                       (call-interactively 'undo-tree-redo)))
-    (define-key joe-map (kbd "C-_") '(lambda ()
-                                       "Calls undo-tree undo."
-                                       (interactive)
-                                       (call-interactively 'undo-tree-undo)))
-    
-    (define-key joe-map (kbd "C-k C-x") 'save-buffers-kill-emacs)
-    (define-key joe-map (kbd "C-k x") (kbd "C-k C-x"))
-    
-    (define-key joe-map (kbd "C-k C-q") 'kill-emacs)
-    (define-key joe-map (kbd "C-k q") (kbd "C-k C-q"))
-    
-    (define-key joe-map (kbd "C-f") 'search-forward)
-    (define-key joe-map (kbd "C-j") 'kill-line)
-    (define-key joe-map (kbd "<escape> o") '(lambda ()
-                                         "Kill to the beginning of the line before point."
-                                         (kill-line 0)))
-    
-    (define-key joe-map (kbd "C-k C-r") '(lambda ()
-                                           "Prompt the minibuffer to save the current buffer as FILE-PATH."
-                                           (interactive "FName of file to insert: ")
-                                           (insert-file-contents file-path)))
-    (define-key joe-map (kbd "C-k r") (kbd "C-k C-r"))
-    
-    (define-key joe-map (kbd "<backspace>") '(lambda ()
-                                               "Redefine the what the backspace key does to mimic vim."
-                                               (interactive)
-                                               (cond ((bolp)
-                                                      (delete-char -1)
-                                                      (indent-according-to-mode)
-                                                      (when (looking-at "\\([ \t]+\\)[^ \t]")
-                                                        (delete-region (point) (match-end 1))))
-                                                     ((<= (point) (save-excursion (back-to-indentation) (point)))
-                                                      (let ((backward-delete-char-untabify-method 'hungry))
-                                                        (call-interactively 'backward-delete-char-untabify)
-                                                        (delete-char -1))
-                                                      (indent-according-to-mode))
-                                                     (t
-                                                      (let ((backward-delete-char-untabify-method 'hungry))
-                                                        (call-interactively 'backward-delete-char-untabify))))))
+    ;; region
     (define-key joe-map (kbd "<C-right>") '(lambda ()
                                              "Control selection to right char."
                                              (interactive)
@@ -190,16 +103,123 @@
                                             (interactive)
                                             (setq this-command-keys-shift-translated t)
                                             (call-interactively 'next-line)))
-    
     (define-key joe-map (kbd "C-k C-y") 'delete-region)
     (define-key joe-map (kbd "C-k y") (kbd "C-k C-y"))
-    
     (define-key joe-map (kbd "C-k C-m") '(lambda ()
                                            "Move the current block to point."
-                                           (interactive)))
+                                           (interactive))) ; TODO
     (define-key joe-map (kbd "C-k m") (kbd "C-k C-m"))
+    (define-key joe-map (kbd "C-k C-c") 'copy-region-as-kill) ;; TODO test
+    (define-key joe-map (kbd "C-k c") (kbd "C-k C-c"))
+    (define-key joe-map (kbd "C-k C-/") '(lambda ()
+                                           (interactive))) ; TODO
+    (define-key joe-map (kbd "C-k /") (kbd "C-k C-/"))
+    (define-key joe-map (kbd "C-k C-w") '(lambda (file-path)
+                                           "Writes the region to FILE-PATH."
+                                           (write-region (region-beginning) (region-end) file-path))) ; TODO test
+    (define-key joe-map (kbd "C-k w") (kbd "C-k C-w"))
     
-    ;; editor manipulation
+    ;; goto
+    (define-key joe-map (kbd "C-z") 'backward-word)
+    (define-key joe-map (kbd "C-x") 'forward-word)
+    (define-key joe-map (kbd "C-k C-u") 'beginning-of-buffer)
+    (define-key joe-map (kbd "C-k u") (kbd "C-k C-u"))
+    (define-key joe-map (kbd "C-k C-v") 'end-of-buffer)
+    (define-key joe-map (kbd "C-k v") (kbd "C-k C-v"))
+    (define-key joe-map (kbd "C-u") 'scroll-down)
+    (define-key joe-map (kbd "C-v") 'scroll-up)
+    (define-key joe-map (kbd "C-e") 'end-of-line)
+    (define-key joe-map (kbd "C-a") 'beginning-of-line-text)
+    (define-key joe-map (kbd "C-k C-l") '(lambda (num)
+                                           "Goto absolute line number NUM."
+                                           (interactive "sGo to line: ")
+                                           (forward-line (* -1 (count-lines 1 (point))))
+                                           (forward-line (1- (string-to-number num)))))
+    (define-key joe-map (kbd "C-k l") (kbd "C-k C-l"))
+    (define-key joe-map (kbd "C-g") '(lambda ()
+                                       (interactive))) ; TODO
+
+    ;; misc
+    (define-key joe-map (kbd "C-k C-j") '(lambda ()
+                                           "Turns a really long line into a paragraph of multiple lines."
+                                           (interactive))) ; TODO
+    (define-key joe-map (kbd "C-k j") (kbd "C-k C-j"))
+    (define-key joe-map (kbd "C-k C-a") 'center-line)
+    (define-key joe-map (kbd "C-k a") (kbd "C-k C-a"))
+    (define-key joe-map (kbd "<C-k C-space>") '(lambda ()
+                                                 "Print current buffer information to the minibuffer."
+                                                 (interactive))) ; TODO
+    (define-key joe-map (kbd "<C-k space>") (kbd "<C-k C-space>"))
+
+    ;; spell
+    (define-key joe-map (kbd "<escape> n") 'flyspell-word)
+    (define-key joe-map (kbd "<escape> l") 'flyspell-buffer)
+
+    ;; delete
+    (define-key joe-map (kbd "<backspace>") '(lambda ()
+                                               "Redefine the what the backspace key does to mimic vim."
+                                               (interactive)
+                                               (cond ((bolp)
+                                                      (delete-char -1)
+                                                      (indent-according-to-mode)
+                                                      (when (looking-at "\\([ \t]+\\)[^ \t]")
+                                                        (delete-region (point) (match-end 1))))
+                                                     ((<= (point) (save-excursion (back-to-indentation) (point)))
+                                                      (let ((backward-delete-char-untabify-method 'hungry))
+                                                        (call-interactively 'backward-delete-char-untabify)
+                                                        (delete-char -1))
+                                                      (indent-according-to-mode))
+                                                     (t
+                                                      (let ((backward-delete-char-untabify-method 'hungry))
+                                                        (call-interactively 'backward-delete-char-untabify))))))
+    (define-key joe-map (kbd "C-y") 'kill-whole-line)
+    (define-key joe-map (kbd "C-w") 'kill-word)
+    (define-key joe-map (kbd "C-o") '(lambda ()
+                                       "Kill the word before point."
+                                       "Kill the word to the left of the cursor."
+                                       (interactive)
+                                       (call-interactively 'backward-word)
+                                       (call-interactively 'kill-word))) ;; TODO, Test
+    (define-key joe-map (kbd "C-j") 'kill-line)
+    (define-key joe-map (kbd "<escape> o") '(lambda ()
+                                         "Kill to the beginning of the line before point."
+                                         (kill-line 0)))
+    (define-key joe-map (kbd "C-^") '(lambda ()
+                                       "Calls undo-tree redo."
+                                       (interactive)
+                                       (call-interactively 'undo-tree-redo)))
+    (define-key joe-map (kbd "C-_") '(lambda ()
+                                       "Calls undo-tree undo."
+                                       (interactive)
+                                       (call-interactively 'undo-tree-undo)))
+
+    ;; exit
+    (define-key joe-map (kbd "C-k C-x") 'save-buffers-kill-emacs)
+    (define-key joe-map (kbd "C-k x") (kbd "C-k C-x"))
+    (define-key joe-map (kbd "C-c") '(lambda ()
+                                       "Abort."
+                                       (interactive)))
+    (define-key joe-map (kbd "C-k C-q") 'kill-emacs)
+    (define-key joe-map (kbd "C-k q") (kbd "C-k C-q"))
+
+    ;; file
+    (define-key joe-map (kbd "C-k C-e") 'find-file)
+    (define-key joe-map (kbd "C-k e") 'find-file)
+    (define-key joe-map (kbd "C-k C-r") '(lambda ()
+                                           "Prompt the minibuffer to save the current buffer as FILE-PATH."
+                                           (interactive "FName of file to insert: ")
+                                           (insert-file-contents file-path)))
+    (define-key joe-map (kbd "C-k r") (kbd "C-k C-r"))
+    (define-key joe-map (kbd "C-k C-d") '(lambda (file-path)
+                                           "Prompt the minibuffer to save the current buffer as FILE-PATH."
+                                           (interactive "FName of file to save: ")
+                                           (save-buffer file-path)
+                                           (message "%s saved." file-path)))
+    (define-key joe-map (kbd "C-k d") (kbd "C-k C-d"))
+    (define-key joe-map (kbd "C-k C-`") '(lambda (file-path)
+                                           "Prompt the minibuffer to save the current buffer as FILE-PATH."
+                                           (interactive))) ; TODO
+    (define-key joe-map (kbd "C-k `") (kbd "C-k C-`"))
     (define-key joe-map (kbd "C-c") '(lambda ()
                                        "Delete current window, exit Emacs if only one window."
                                        (interactive)
@@ -209,59 +229,90 @@
                                                    (kill-emacs)
                                                  nil)
                                              (kill-emacs))
-                                         (delete-window))))
+                                         (delete-window)))) ; TODO
+
     
-    (define-key joe-map (kbd "C-k o") 'split-window-vertically)
-    
-    (define-key joe-map (kbd "C-k C-c") 'copy-region-as-kill) ;; TODO test
-    (define-key joe-map (kbd "C-k c") (kbd "C-k C-c"))
-    
+    ;; search
+    (define-key joe-map (kbd "C-k C-f") '(lambda ()
+                                           "Joe-style find function."
+                                           (interactive))) ; TODO
+    (define-key joe-map (kbd "C-k C-f") (kbd "C-k C-f"))
+
+    ;; help TODO
+    (define-key joe-map (kbd "C-k C-h") '(lambda ()
+                                           "Set up or turn off the help buffer."
+                                           (interactive))) ; TODO
+    (define-key joe-map (kbd "C-k h") (kbd "C-k C-h"))
+
+    ;; macros TODO
+    (define-key joe-map (kbd "C-k C-[") '(lambda (num)
+                                           "Set a macro with id NUM."
+                                           (interactive "%s"))) ; TODO
+    (define-key joe-map (kbd "C-k [") (kbd "C-k C-["))
+    (define-key joe-map (kbd "C-k C-]") 'end-kbd-macro) ; TODO ?
+    (define-key joe-map (kbd "C-k ]") (kbd "C-k C-]"))
+    (define-key joe-map (kbd "C-k C-\\") '(lambda() (interactive))) ; TODO ?
+    (define-key joe-map (kbd "C-k \\") (kbd "C-k C-\\"))
+    (define-key joe-map (kbd "<escape> D") '(lambda() (interactive))) ; TODO ?
+
+    ;; scroll
+    (define-key joe-map (kbd "<escape> w") 'scroll-down-line)
+    (define-key joe-map (kbd "<escape> z") 'scroll-up-line)
+    (define-key joe-map (kbd "<escape> <") 'scroll-left) ; TODO test
+    (define-key joe-map (kbd "<escape> >") 'scroll-right) ; TODO test
+
+    ;; insert
+    (define-key joe-map (kbd "C-]") '(lambda ()
+                                       "Insert a newline char."
+                                       (interactive)
+                                       (insert "\n"))) ; TODO test
+    (define-key joe-map (kbd "C-@") '(lambda ()
+                                       "Insert a space char."
+                                       (interactive)
+                                       (insert " ")))
+    (define-key joe-map (kbd "C-q") '(lambda ()(interactive))) ; TODO
+    (define-key joe-map (kbd "<escape> y") '(lambda () (interactive))) ; TODO
+
+    ;; window
     (define-key joe-map (kbd "C-k C-o") 'split-window-vertically)
     (define-key joe-map (kbd "C-k o") (kbd "C-k C-o"))
-
-    (define-key joe-map (kbd "<escape> n") 'flyspell-word)
-    (define-key joe-map (kbd "<escape> l") 'flyspell-buffer)
-    
+    (define-key joe-map (kbd "C-k C-g") 'enlarge-window)
+    (define-key joe-map (kbd "C-k g") (kbd "C-k C-g"))
+    (define-key joe-map (kbd "C-k C-t") 'shrink-window)
+    (define-key joe-map (kbd "C-k t") (kbd "C-k C-t"))
     (define-key joe-map (kbd "C-k C-n") '(lambda ()
                                            "Move to the next window."
                                            (interactive)
                                            (other-window 1)))
     (define-key joe-map (kbd "C-k n") (kbd "C-k C-n"))
-    
     (define-key joe-map (kbd "C-k C-p") '(lambda ()
                                            "Move to the previous window."
                                            (interactive)
                                            (other-window -1)))
     (define-key joe-map (kbd "C-k p") (kbd "C-k C-p"))
-    
-    (define-key joe-map (kbd "C-k C-d") '(lambda (file-path)
-                                           "Prompt the minibuffer to save the current buffer as FILE-PATH."
-                                           (interactive "FName of file to save: ")
-                                           (save-buffer file-path)
-                                           (message "%s saved." file-path)))
-    
-    (define-key joe-map (kbd "C-k d") (kbd "C-c C-d"))
-    
-    (define-key joe-map (kbd "C-k C-g") 'enlarge-window)
-    (define-key joe-map (kbd "C-k g") (kbd "C-k C-g"))
-    
-    (define-key joe-map (kbd "C-k C-t") 'shrink-window)
-    (define-key joe-map (kbd "C-k t") (kbd "C-k C-t"))
-    
-    ;; additions for features that joe does not support.
+    (define-key joe-map (kbd "C-k C-i") '(lambda ()
+                                           "Show one / All."
+                                           (interactive))) ; TODO
+    (define-key joe-map (kbd "C-k i") (kbd "C-k C-i"))
     (define-key joe-map (kbd "M-+")  'text-scale-increase)
     (define-key joe-map (kbd "M--")  'text-scale-decrease)
-    (define-key joe-map (kbd "C-k C-;") 'split-window-horizontally)
-    (define-key joe-map (kbd "C-k ;") (kbd "C-k C-;"))
+    
 
-    ;; spellcheck TODO
+    ;; shell TODO
+    ;; in joe, the cursor does not change when the comand is appended.
+    (define-key joe-map (kbd "<escape> !") '(lambda (com)
+                                              "Appends the output of shell command COM to current buffer."
+                                              (interactive "Program to run: ")
+                                              (append-to-buffer (shell-command-to-string com)))) ; TODO test,
+    (define-key joe-map (kbd "C-k C-z") 'suspend-emacs)
+    (define-key joe-map (kbd "C-k z") (kbd "C-k C-z"))
     joe-map)
   "The joestar-mode keymaps.")
 
 ;;; defining the minor modes
 
 (define-minor-mode joestar-mode
-  "A minor mode so that my key settings override annoying major modes."
+  "Joe's Own Editor emulation mode."
   :init-value nil
   :lighter " joe"
   nil
@@ -275,8 +326,8 @@
                 scroll-down-aggressively 0.01)
 
   ;; keep cursor position while scrolling
-  (setq scroll-preserve-screen-position 'always) ; TODO fix behavior so that it always scrolls perfectly
-  (setq scroll-error-top-bottom t)
+  (setq scroll-preserve-screen-position 'always)
+  (setq scroll-error-top-bottom nil)
   (defvar undo-tree-map
     (let ((map (make-sparse-keymap)))
       ;; remap `undo' and `undo-only' to `undo-tree-undo'
