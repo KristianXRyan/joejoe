@@ -48,6 +48,9 @@
 (defvar joe-mark-8 nil "Mark 8.")
 (defvar joe-mark-9 nil "Mark 9.")
 
+(defvar joe-lastmark nil "The last mark id.")
+(defvar joe-nextmark nil "The next mark id.")
+
 (make-variable-buffer-local 'joe-mark-0)
 (make-variable-buffer-local 'joe-mark-1)
 (make-variable-buffer-local 'joe-mark-2)
@@ -58,6 +61,9 @@
 (make-variable-buffer-local 'joe-mark-7)
 (make-variable-buffer-local 'joe-mark-8)
 (make-variable-buffer-local 'joe-mark-9)
+
+(make-variable-buffer-local 'joe-lastmark)
+(make-variable-buffer-local 'joe-nextmark)
 
 ;; TODO function does not work
 (defun joe/setmark (sid)
@@ -116,8 +122,15 @@
     (define-key joe-map (kbd "C-k /") (kbd "C-k C-/"))
     (define-key joe-map (kbd "C-k C-w") '(lambda (file-path)
                                            "Writes the region to FILE-PATH."
-                                           (write-region (region-beginning) (region-end) file-path))) ; TODO test
-    (define-key joe-map (kbd "C-k w") (kbd "C-k C-w"))
+                                           (interactive "FName of file to write (C-k h for help): ")
+                                           (write-region (region-beginning) (region-end) file-path))) ; TODO contextual K-h keybind, and save if no block
+    ;; had to define the lambda twice because (kbd C-k C-w) wasn't working for some reason
+    (define-key joe-map (kbd "C-k w") '(lambda (file-path)
+                                           "Writes the region to FILE-PATH."
+                                           (interactive "FName of file to write (C-k h for help): ")
+                                           (write-region (region-beginning) (region-end) file-path)))
+
+    
     
     ;; goto
     (define-key joe-map (kbd "C-z") 'backward-word)
@@ -302,10 +315,143 @@
     ;; in joe, the cursor does not change when the comand is appended.
     (define-key joe-map (kbd "<escape> !") '(lambda (com)
                                               "Appends the output of shell command COM to current buffer."
-                                              (interactive "Program to run: ")
+                                              (interactive "sProgram to run: ")
                                               (append-to-buffer (shell-command-to-string com)))) ; TODO test,
     (define-key joe-map (kbd "C-k C-z") 'suspend-emacs)
     (define-key joe-map (kbd "C-k z") (kbd "C-k C-z"))
+
+    ;; bookmark
+    (define-key joe-map (kbd "<escape> <escape>") '(lambda (sid)
+                                                     "Set mark SID."
+                                                     (interactive "sSet Mark (0-9): ")
+                                                     (let ((id (string-to-number sid)))
+                                                       (cond
+                                                        ((= id 0)
+                                                         (progn
+                                                           (setq joe-mark-0 (point-marker))
+                                                           (message "Mark 0 set.")))
+                                                        ((= id 1)
+                                                         (progn
+                                                           (setq joe-mark-1 (point-marker))
+                                                           (message "Mark 1 set.")))
+                                                        ((= id 2)
+                                                         (progn
+                                                           (setq joe-mark-2 (point-marker))
+                                                           (message "Mark 2 set.")))
+                                                        ((= id 3)
+                                                         (progn
+                                                           (setq joe-mark-3 (point-marker))
+                                                           (message "Mark 3 set.")))
+                                                        ((= id 4)
+                                                         (progn
+                                                           (setq joe-mark-4 (point-marker))
+                                                           (message "Mark 4 set.")))
+                                                        ((= id 5)
+                                                         (progn
+                                                           (setq joe-mark-5 (point-marker))
+                                                           (message "Mark 5 set.")))
+                                                        ((= id 6)
+                                                         (progn
+                                                           (setq joe-mark-6 (point-marker))
+                                                           (message "Mark 6 set.")))
+                                                        ((= id 7)
+                                                         (progn
+                                                           (setq joe-mark-7 (point-marker))
+                                                           (message "Mark 7 set.")))
+                                                        ((= id 8)
+                                                         (progn
+                                                           (setq joe-mark-8 (point-marker))
+                                                           (message "Mark 8 set.")))
+                                                        ((= id 9)
+                                                         (progn
+                                                           (setq joe-mark-9 (point-marker))
+                                                           (message "Mark 9 set.")))))))
+    (define-key joe-map (kbd "<escape> 0") '(lambda ()
+                                              "Goto mark 0"
+                                              (interactive)
+                                              (if joe-mark-0
+                                                  (progn
+                                                    (push-mark)
+                                                    (goto-char joe-mark-0))
+                                                (error "Mark 0 not set"))))
+    (define-key joe-map (kbd "<escape> 1") '(lambda ()
+                                              "Goto mark 1"
+                                              (interactive)
+                                              (if joe-mark-1
+                                                  (progn
+                                                    (push-mark)
+                                                    (goto-char joe-mark-1))
+                                                (error "Mark 1 not set"))))
+    (define-key joe-map (kbd "<escape> 2") '(lambda ()
+                                              "Goto mark 2"
+                                              (interactive)
+                                              (if joe-mark-2
+                                                  (progn
+                                                    (push-mark)
+                                                    (goto-char joe-mark-2))
+                                                (error "Mark 2 not set"))))
+    (define-key joe-map (kbd "<escape> 3") '(lambda ()
+                                              "Goto mark 3"
+                                              (interactive)
+                                              (if joe-mark-3
+                                                  (progn
+                                                    (push-mark)
+                                                    (goto-char joe-mark-3))
+                                                (error "Mark 3 not set"))))
+    (define-key joe-map (kbd "<escape> 4") '(lambda ()
+                                              "Goto mark 4"
+                                              (interactive)
+                                              (if joe-mark-4
+                                                  (progn
+                                                    (push-mark)
+                                                    (goto-char joe-mark-4))
+                                                (error "Mark 4 not set"))))
+    (define-key joe-map (kbd "<escape> 5") '(lambda ()
+                                              "Goto mark 5"
+                                              (interactive)
+                                              (if joe-mark-5
+                                                  (progn
+                                                    (push-mark)
+                                                    (goto-char joe-mark-5))
+                                                (error "Mark 5 not set"))))
+    (define-key joe-map (kbd "<escape> 6") '(lambda ()
+                                              "Goto mark 6"
+                                              (interactive)
+                                              (if joe-mark-6
+                                                  (progn
+                                                    (push-mark)
+                                                    (goto-char joe-mark-6))
+                                                (error "Mark 6 not set"))))
+    (define-key joe-map (kbd "<escape> 7") '(lambda ()
+                                              "Goto mark 7"
+                                              (interactive)
+                                              (if joe-mark-7
+                                                  (progn
+                                                    (push-mark)
+                                                    (goto-char joe-mark-7))
+                                                (error "Mark 7 not set"))))
+    (define-key joe-map (kbd "<escape> 8") '(lambda ()
+                                              "Goto mark 8"
+                                              (interactive)
+                                              (if joe-mark-8
+                                                  (progn
+                                                    (push-mark)
+                                                    (goto-char joe-mark-8))
+                                                (error "Mark 8 not set"))))
+    (define-key joe-map (kbd "<escape> 9") '(lambda ()
+                                              "Goto mark 9"
+                                              (interactive)
+                                              (if joe-mark-9
+                                                  (progn
+                                                    (push-mark)
+                                                    (goto-char joe-mark-9))
+                                                (error "Mark 9 not set"))))
+    (define-key joe-map (kbd "C-k C--") '(lambda ()
+                                           "Move point to next mark."
+                                           (interactive)))
+
+    ;; buffer
+    
     joe-map)
   "The joestar-mode keymaps.")
 
