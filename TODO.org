@@ -1,10 +1,7 @@
-* Overall
-Help-Screen
-Documentation
-Emacs copy-paste with and without clipboard
-indentation
-
-* Maybe
-have one master interactive function that calls all of the other functions to keep keybindings local to a function
-
-* orgstar-mode...
+* Back to normal functions...
+Implement joe functions
+* Region
+* TODO Finish bookmarks
+* lambda function for opening up a terminal emulator
+** More customizability in general
+* Move undo-tree remaps out
