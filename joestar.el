@@ -144,6 +144,195 @@
   (generate-new-buffer (generate-new-buffer-name name))
   (switch-to-buffer name))
 
+(defun joe-insf (file-path)
+  "Prompt the minibuffer to save the current buffer as FILE-PATH."
+  (interactive "FName of file to insert: ")
+  (insert-file-contents file-path))
+
+(defun joe-save (file-path)
+  "Prompt the minibuffer to save the current buffer as FILE-PATH."
+  (interactive "bName of file to save: ")
+  (save-buffer file-path)
+  (message "File %s saved." file-path))
+
+(defun joe-tw0 ()
+  "Eliminate this window."
+  (interactive)
+  (if (= 1 (length (window-list)))
+      (if (buffer-modified-p)
+          (if (y-or-n-p "Lose changes to this file? ")
+              (kill-emacs)
+            nil)
+        (kill-emacs))
+    (delete-window)))
+
+(defun joe-open ()
+  "Insert a newline character."
+  (interactive)
+  (insert "\n"))
+
+(defun joe-insc ()
+  "Insert a space character."
+  (interactive)
+  (insert " "))
+
+(defun joe-nextw ()
+  "Move to the next window."
+  (interactive)
+  (other-window 1))
+
+(defun joe-prevw ()
+  "Move to the next window."
+  (interactive)
+  (other-window -1))
+
+(defun joe-setmark (sid)
+  "Set mark SID."
+  (interactive "sSet Mark (0-9): ")
+  (let ((id (string-to-number sid)))
+    (cond
+     ((= id 0)
+      (progn
+        (setq joe-mark-0 (point-marker))
+        (message "Mark 0 set.")))
+     ((= id 1)
+      (progn
+        (setq joe-mark-1 (point-marker))
+        (message "Mark 1 set.")))
+     ((= id 2)
+      (progn
+        (setq joe-mark-2 (point-marker))
+        (message "Mark 2 set.")))
+     ((= id 3)
+      (progn
+        (setq joe-mark-3 (point-marker))
+        (message "Mark 3 set.")))
+     ((= id 4)
+      (progn
+        (setq joe-mark-4 (point-marker))
+        (message "Mark 4 set.")))
+     ((= id 5)
+      (progn
+        (setq joe-mark-5 (point-marker))
+        (message "Mark 5 set.")))
+     ((= id 6)
+      (progn
+        (setq joe-mark-6 (point-marker))
+        (message "Mark 6 set.")))
+     ((= id 7)
+      (progn
+        (setq joe-mark-7 (point-marker))
+        (message "Mark 7 set.")))
+     ((= id 8)
+      (progn
+        (setq joe-mark-8 (point-marker))
+        (message "Mark 8 set.")))
+     ((= id 9)
+      (progn
+        (setq joe-mark-9 (point-marker))
+        (message "Mark 9 set."))))))
+
+(defun joe-gomark0 ()
+  "Goto mark 0."
+  (interactive)
+  (if joe-mark-0
+      (progn
+        (push-mark)
+        (goto-char joe-mark-0))
+    (error "Mark 0 not set")))
+(defun joe-gomark1 ()
+  "Goto mark 1."
+  (interactive)
+  (if joe-mark-1
+      (progn
+        (push-mark)
+        (goto-char joe-mark-1))
+    (error "Mark 1 not set")))
+(defun joe-gomark2 ()
+  "Goto mark 2."
+  (interactive)
+  (if joe-mark-2
+      (progn
+        (push-mark)
+        (goto-char joe-mark-2))
+    (error "Mark 2 not set")))
+(defun joe-gomark3 ()
+  "Goto mark 3."
+  (interactive)
+  (if joe-mark-3
+      (progn
+        (push-mark)
+        (goto-char joe-mark-3))
+    (error "Mark 3 not set")))
+(defun joe-gomark4 ()
+  "Goto mark 4."
+  (interactive)
+  (if joe-mark-4
+      (progn
+        (push-mark)
+        (goto-char joe-mark-4))
+    (error "Mark 4 not set")))
+(defun joe-gomark5 ()
+  "Goto mark 5."
+  (interactive)
+  (if joe-mark-5
+      (progn
+        (push-mark)
+        (goto-char joe-mark-5))
+    (error "Mark 5 not set")))
+(defun joe-gomark6()
+  "Goto mark 6."
+  (interactive)
+  (if joe-mark-6
+      (progn
+        (push-mark)
+        (goto-char joe-mark-6))
+    (error "Mark 6 not set")))
+(defun joe-gomark7 ()
+  "Goto mark 7."
+  (interactive)
+  (if joe-mark-7
+      (progn
+        (push-mark)
+        (goto-char joe-mark-7))
+    (error "Mark 7 not set")))
+(defun joe-gomark8 ()
+  "Goto mark 8."
+  (interactive)
+  (if joe-mark-8
+      (progn
+        (push-mark)
+        (goto-char joe-mark-8))
+    (error "Mark 8 not set")))
+(defun joe-gomark9 ()
+  "Goto mark 9."
+  (interactive)
+  (if joe-mark-9
+      (progn
+        (push-mark)
+        (goto-char joe-mark-9))
+    (error "Mark 9 not set")))
+
+(defun joe-gonextmark ()
+  "Move point to next mark."
+  (interactive)
+  (if joe-lastmark
+      (progn
+        (push-mark)
+        (goto-char joe-lastmark))))
+(defun joe-goprevmark ()
+  "Move point to next mark."
+  (interactive)
+  (if joe-nextmark
+      (progn
+        (push-mark)
+        (goto-char joe-nextmark))))
+
+(defun joe-insertcmd (com)
+  "Append the output of shell command COM to current buffer."
+  (interactive "sProgram to run: ")
+  (append-to-buffer (shell-command-to-string com))) ; TODO fix
+
 (defalias 'joe-nbuf 'next-buffer)
 (defalias 'joe-pbuf 'previous-buffer)
 (defalias 'joe-reload 'revert-buffer)
@@ -225,32 +414,13 @@
     ;; file
     (define-key joe-map (kbd "C-k C-e") 'find-file)
     (define-key joe-map (kbd "C-k e") 'find-file)
-    (define-key joe-map (kbd "C-k C-r") '(lambda ()
-                                           "Prompt the minibuffer to save the current buffer as FILE-PATH."
-                                           (interactive "FName of file to insert: ")
-                                           (insert-file-contents file-path)))
+    (define-key joe-map (kbd "C-k C-r") 'joe-insf)
     (define-key joe-map (kbd "C-k r") (kbd "C-k C-r"))
-    (define-key joe-map (kbd "C-k C-d") '(lambda (file-path)
-                                           "Prompt the minibuffer to save the current buffer as FILE-PATH."
-                                           (interactive "bName of file to save: ")
-                                           (save-buffer file-path)
-                                           (message "File %s saved." file-path)))
+    (define-key joe-map (kbd "C-k C-d") 'joe-save)
     (define-key joe-map (kbd "C-k d") (kbd "C-k C-d"))
-    (define-key joe-map (kbd "C-k C-`") '(lambda (file-path)
-                                           "Prompt the minibuffer to save the current buffer as FILE-PATH."
-                                           (interactive))) ; TODO
+    (define-key joe-map (kbd "C-k C-`") 'revert-buffer)
     (define-key joe-map (kbd "C-k `") (kbd "C-k C-`"))
-    (define-key joe-map (kbd "C-c") '(lambda ()
-                                       "Delete current window, exit Emacs if only one window."
-                                       (interactive)
-                                       (if (= 1 (length (window-list)))
-                                           (if (buffer-modified-p)
-                                               (if (y-or-n-p "Lose changes to this file? ")
-                                                   (kill-emacs)
-                                                 nil)
-                                             (kill-emacs))
-                                         (delete-window)))) ; TODO
-
+    (define-key joe-map (kbd "C-c") 'joe-tw0)
     
     ;; search
     (define-key joe-map (kbd "C-k C-f") '(lambda ()
@@ -282,14 +452,8 @@
     (define-key joe-map (kbd "<escape> >") 'scroll-right) ; TODO test
 
     ;; insert
-    (define-key joe-map (kbd "C-]") '(lambda ()
-                                       "Insert a newline char."
-                                       (interactive)
-                                       (insert "\n"))) ; TODO test
-    (define-key joe-map (kbd "C-@") '(lambda ()
-                                       "Insert a space char."
-                                       (interactive)
-                                       (insert " ")))
+    (define-key joe-map (kbd "C-]") 'joe-open)
+    (define-key joe-map (kbd "C-@") 'joe-insc)
     (define-key joe-map (kbd "C-q") '(lambda ()(interactive))) ; TODO
     (define-key joe-map (kbd "<escape> y") '(lambda () (interactive))) ; TODO
 
@@ -300,19 +464,13 @@
     (define-key joe-map (kbd "C-k g") (kbd "C-k C-g"))
     (define-key joe-map (kbd "C-k C-t") 'shrink-window)
     (define-key joe-map (kbd "C-k t") (kbd "C-k C-t"))
-    (define-key joe-map (kbd "C-k C-n") '(lambda ()
-                                           "Move to the next window."
-                                           (interactive)
-                                           (other-window 1)))
+    (define-key joe-map (kbd "C-k C-n") 'joe-nextw)
     (define-key joe-map (kbd "C-k n") (kbd "C-k C-n"))
-    (define-key joe-map (kbd "C-k C-p") '(lambda ()
-                                           "Move to the previous window."
-                                           (interactive)
-                                           (other-window -1)))
+    (define-key joe-map (kbd "C-k C-p") 'joe-prevw)
     (define-key joe-map (kbd "C-k p") (kbd "C-k C-p"))
     (define-key joe-map (kbd "C-k C-i") '(lambda ()
                                            "Show one / All."
-                                           (interactive))) ; TODO
+                                           (interactive))) ; TODO, cuz I don't even know what it does in joe
     (define-key joe-map (kbd "C-k i") (kbd "C-k C-i"))
     (define-key joe-map (kbd "M-+")  'text-scale-increase)
     (define-key joe-map (kbd "M--")  'text-scale-decrease)
@@ -320,154 +478,26 @@
 
     ;; shell TODO
     ;; in joe, the cursor does not change when the comand is appended.
-    (define-key joe-map (kbd "<escape> !") '(lambda (com)
-                                              "Appends the output of shell command COM to current buffer."
-                                              (interactive "sProgram to run: ")
-                                              (append-to-buffer (shell-command-to-string com)))) ; TODO test,
+    (define-key joe-map (kbd "<escape> !") 'joe-insertcmd)
     (define-key joe-map (kbd "C-k C-z") 'suspend-emacs)
     (define-key joe-map (kbd "C-k z") (kbd "C-k C-z"))
 
     ;; bookmark
-    (define-key joe-map (kbd "<escape> <escape>") '(lambda (sid)
-                                                     "Set mark SID."
-                                                     (interactive "sSet Mark (0-9): ")
-                                                     (let ((id (string-to-number sid)))
-                                                       (cond
-                                                        ((= id 0)
-                                                         (progn
-                                                           (setq joe-mark-0 (point-marker))
-                                                           (message "Mark 0 set.")))
-                                                        ((= id 1)
-                                                         (progn
-                                                           (setq joe-mark-1 (point-marker))
-                                                           (message "Mark 1 set.")))
-                                                        ((= id 2)
-                                                         (progn
-                                                           (setq joe-mark-2 (point-marker))
-                                                           (message "Mark 2 set.")))
-                                                        ((= id 3)
-                                                         (progn
-                                                           (setq joe-mark-3 (point-marker))
-                                                           (message "Mark 3 set.")))
-                                                        ((= id 4)
-                                                         (progn
-                                                           (setq joe-mark-4 (point-marker))
-                                                           (message "Mark 4 set.")))
-                                                        ((= id 5)
-                                                         (progn
-                                                           (setq joe-mark-5 (point-marker))
-                                                           (message "Mark 5 set.")))
-                                                        ((= id 6)
-                                                         (progn
-                                                           (setq joe-mark-6 (point-marker))
-                                                           (message "Mark 6 set.")))
-                                                        ((= id 7)
-                                                         (progn
-                                                           (setq joe-mark-7 (point-marker))
-                                                           (message "Mark 7 set.")))
-                                                        ((= id 8)
-                                                         (progn
-                                                           (setq joe-mark-8 (point-marker))
-                                                           (message "Mark 8 set.")))
-                                                        ((= id 9)
-                                                         (progn
-                                                           (setq joe-mark-9 (point-marker))
-                                                           (message "Mark 9 set.")))))))
-    (define-key joe-map (kbd "<escape> 0") '(lambda ()
-                                              "Goto mark 0"
-                                              (interactive)
-                                              (if joe-mark-0
-                                                  (progn
-                                                    (push-mark)
-                                                    (goto-char joe-mark-0))
-                                                (error "Mark 0 not set"))))
-    (define-key joe-map (kbd "<escape> 1") '(lambda ()
-                                              "Goto mark 1"
-                                              (interactive)
-                                              (if joe-mark-1
-                                                  (progn
-                                                    (push-mark)
-                                                    (goto-char joe-mark-1))
-                                                (error "Mark 1 not set"))))
-    (define-key joe-map (kbd "<escape> 2") '(lambda ()
-                                              "Goto mark 2"
-                                              (interactive)
-                                              (if joe-mark-2
-                                                  (progn
-                                                    (push-mark)
-                                                    (goto-char joe-mark-2))
-                                                (error "Mark 2 not set"))))
-    (define-key joe-map (kbd "<escape> 3") '(lambda ()
-                                              "Goto mark 3"
-                                              (interactive)
-                                              (if joe-mark-3
-                                                  (progn
-                                                    (push-mark)
-                                                    (goto-char joe-mark-3))
-                                                (error "Mark 3 not set"))))
-    (define-key joe-map (kbd "<escape> 4") '(lambda ()
-                                              "Goto mark 4"
-                                              (interactive)
-                                              (if joe-mark-4
-                                                  (progn
-                                                    (push-mark)
-                                                    (goto-char joe-mark-4))
-                                                (error "Mark 4 not set"))))
-    (define-key joe-map (kbd "<escape> 5") '(lambda ()
-                                              "Goto mark 5"
-                                              (interactive)
-                                              (if joe-mark-5
-                                                  (progn
-                                                    (push-mark)
-                                                    (goto-char joe-mark-5))
-                                                (error "Mark 5 not set"))))
-    (define-key joe-map (kbd "<escape> 6") '(lambda ()
-                                              "Goto mark 6"
-                                              (interactive)
-                                              (if joe-mark-6
-                                                  (progn
-                                                    (push-mark)
-                                                    (goto-char joe-mark-6))
-                                                (error "Mark 6 not set"))))
-    (define-key joe-map (kbd "<escape> 7") '(lambda ()
-                                              "Goto mark 7"
-                                              (interactive)
-                                              (if joe-mark-7
-                                                  (progn
-                                                    (push-mark)
-                                                    (goto-char joe-mark-7))
-                                                (error "Mark 7 not set"))))
-    (define-key joe-map (kbd "<escape> 8") '(lambda ()
-                                              "Goto mark 8"
-                                              (interactive)
-                                              (if joe-mark-8
-                                                  (progn
-                                                    (push-mark)
-                                                    (goto-char joe-mark-8))
-                                                (error "Mark 8 not set"))))
-    (define-key joe-map (kbd "<escape> 9") '(lambda ()
-                                              "Goto mark 9"
-                                              (interactive)
-                                              (if joe-mark-9
-                                                  (progn
-                                                    (push-mark)
-                                                    (goto-char joe-mark-9))
-                                                (error "Mark 9 not set"))))
-    (define-key joe-map (kbd "C-k C--") '(lambda ()
-                                           "Move point to next mark."
-                                           (interactive)
-                                           (if joe-lastmark
-                                               (progn
-                                                 (push-mark)
-                                                 (goto-char joe-lastmark)))))
+    (define-key joe-map (kbd "<escape> <escape>") 'joe-setmark)
+    (define-key joe-map (kbd "<escape> 0") 'joe-gomark0)
+    (define-key joe-map (kbd "<escape> 1") 'joe-gomark1)
+    (define-key joe-map (kbd "<escape> 2") 'joe-gomark2)
+    (define-key joe-map (kbd "<escape> 3") 'joe-gomark3)
+    (define-key joe-map (kbd "<escape> 4") 'joe-gomark4)
+    (define-key joe-map (kbd "<escape> 5") 'joe-gomark5)
+    (define-key joe-map (kbd "<escape> 6") 'joe-gomark6)
+    (define-key joe-map (kbd "<escape> 7") 'joe-gomark7)
+    (define-key joe-map (kbd "<escape> 8") 'joe-gomark8)
+    (define-key joe-map (kbd "<escape> 9") 'joe-gomark9)
+    
+    (define-key joe-map (kbd "C-k C--") 'joe-gonextmark)
     (define-key joe-map (kbd "C-k -") (kbd "C-k C--"))
-    (define-key joe-map (kbd "C-k C-=") '(lambda ()
-                                           "Move point to next mark."
-                                           (interactive)
-                                           (if joe-nextmark
-                                               (progn
-                                                 (push-mark)
-                                                 (goto-char joe-nextmark)))))
+    (define-key joe-map (kbd "C-k C-=") 'joe-goprevmark)
     (define-key joe-map (kbd "C-k =") (kbd "C-k C-="))
     ;; buffer
     (define-key joe-map (kbd "<escape> u") 'joe-nbuf)
