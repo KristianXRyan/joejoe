@@ -134,6 +134,19 @@
   (interactive)
   (call-interactively 'undo-tree-undo))
 
+(defun joe-reloadall ()
+  "Revert all unmodified buffers."
+  (interactive))
+
+(defun joe-scratch (name)
+  "Push a scratch buffer NAME into current window."
+  (interactive "sName of buffer to edit: ")
+  (generate-new-buffer (generate-new-buffer-name name))
+  (switch-to-buffer name))
+
+(defalias 'joe-nbuf 'next-buffer)
+(defalias 'joe-pbuf 'previous-buffer)
+(defalias 'joe-reload 'revert-buffer)
 
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map
@@ -457,6 +470,9 @@
                                                  (goto-char joe-nextmark)))))
     (define-key joe-map (kbd "C-k =") (kbd "C-k C-="))
     ;; buffer
+    (define-key joe-map (kbd "<escape> u") 'joe-nbuf)
+    (define-key joe-map (kbd "<escape> v") 'joe-pbuf)
+    
     
     joe-map)
   "The joestar-mode keymaps.")
