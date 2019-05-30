@@ -155,17 +155,6 @@
   (save-buffer file-path)
   (message "File %s saved." file-path))
 
-(defun joe-tw0 ()
-  "Eliminate this window."
-  (interactive)
-  (if (= 1 (length (window-list)))
-      (if (buffer-modified-p)
-          (if (y-or-n-p "Lose changes to this file? ")
-              (kill-emacs)
-            nil)
-        (kill-emacs))
-    (delete-window)))
-
 (defun joe-open ()
   "Insert a newline character."
   (interactive)
@@ -328,14 +317,20 @@
         (push-mark)
         (goto-char joe-nextmark))))
 
+; TODO fix bug where this only works if called from mb
 (defun joe-insertcmd (com)
   "Append the output of shell command COM to current buffer."
   (interactive "sProgram to run: ")
-  (append-to-buffer (shell-command-to-string com))) ; TODO fix
+  (let* ((joe-cur-mark (point-marker)))
+    (call-interactively 'end-of-buffer)
+    (insert (shell-command-to-string com))
+    (goto-char joe-cur-mark)))
 
 (defalias 'joe-nbuf 'next-buffer)
 (defalias 'joe-pbuf 'previous-buffer)
 (defalias 'joe-reload 'revert-buffer)
+(defalias 'joe-tw0 'delete-window)
+(defalias 'joe-tw1 'delete-other-windows)
 
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map

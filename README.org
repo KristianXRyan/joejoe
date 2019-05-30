@@ -1,5 +1,8 @@
 * Joestar
 Joestar is a minor mode for emacs that seeks to emulate [[https://github.com/jhallen/joe-editor][Joe's Own Editor]], a wordstar-like terminal text editor. 
+* Known Issues
+The keyboard shortcut to insert a shell command currently does not work properly. 
+In order to insert shell output call the joe-insertcmd function directly.
 * Joestar and undo-tree
 Joestar depends on undo-tree, which uses C-x for several of its keybindings, which conflicts with Joestar's usage of C-x.
 In order to fix this, Joestar remaps the three following functions:
