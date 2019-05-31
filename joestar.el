@@ -55,6 +55,8 @@
 
 (defvar joe-marklist nil "List of the currently used marks.")
 
+(defvar joe-prev-search nil "The last searched-for item.")
+
 (make-variable-buffer-local 'joe-mark-0)
 (make-variable-buffer-local 'joe-mark-1)
 (make-variable-buffer-local 'joe-mark-2)
@@ -68,6 +70,21 @@
 
 (make-variable-buffer-local 'joe-lastmark)
 (make-variable-buffer-local 'joe-nextmark)
+
+(make-variable-buffer-local 'joe-prev-search)
+
+;; non-interactive helper functions
+
+; TODO lambda-ize
+(defun joe-get-findstr ()
+  "Get the string to search for."
+  (if (null joe-prev-search)
+      (read-string "Find: ")
+    (read-string (format "Find [%s]: " joe-prev-search))))
+
+(defun joe-get-find-action ()
+  "Prompt the user for an action."
+  (read-string "(I)gnore (R)eplace (B)ackwards Bloc(K): "))
 
 (defun joe-todo-func ()
   "TODO func."
@@ -134,6 +151,7 @@
   (interactive)
   (call-interactively 'undo-tree-undo))
 
+; TODO
 (defun joe-reloadall ()
   "Revert all unmodified buffers."
   (interactive))
@@ -318,13 +336,30 @@
         (goto-char joe-nextmark))))
 
 ; TODO fix bug where this only works if called from mb
-(defun joe-insertcmd (com)
+(defun joe-run (com)
   "Append the output of shell command COM to current buffer."
   (interactive "sProgram to run: ")
   (let* ((joe-cur-mark (point-marker)))
     (call-interactively 'end-of-buffer)
     (insert (shell-command-to-string com))
     (goto-char joe-cur-mark)))
+
+(defun joe-ffirst (str action)
+  "Find next STR, perform ACTION."
+  (interactive (list (joe-get-findstr) (joe-get-find-action)))
+  (setq joe-prev-search str)
+  (cond ((string= action "R")
+         (progn
+           (message "TODO")))
+        ((string= action "B")
+         (search-backward str))
+        ((string= action "K")
+         (progn
+           (call-interactively 'narrow-to-region)
+           (goto-char (point-min))
+           (search-forward str)
+           (widen)))
+        ((search-forward str))))
 
 (defalias 'joe-nbuf 'next-buffer)
 (defalias 'joe-pbuf 'previous-buffer)
@@ -373,7 +408,7 @@
     (define-key joe-map (kbd "C-k C-l") 'joe-line)
     (define-key joe-map (kbd "C-k l") (kbd "C-k C-l"))
     (define-key joe-map (kbd "C-g") 'joe-todo-func) ; TODO
-
+    
     ;; misc
     (define-key joe-map (kbd "C-k C-j") 'joe-todo-func)
     (define-key joe-map (kbd "C-k j") (kbd "C-k C-j"))
@@ -418,10 +453,8 @@
     (define-key joe-map (kbd "C-c") 'joe-tw0)
     
     ;; search
-    (define-key joe-map (kbd "C-k C-f") '(lambda ()
-                                           "Joe-style find function."
-                                           (interactive))) ; TODO
-    (define-key joe-map (kbd "C-k C-f") (kbd "C-k C-f"))
+    (define-key joe-map (kbd "C-k C-f") 'joe-ffirst)
+    (define-key joe-map (kbd "C-k f") (kbd "C-k C-f"))
 
     ;; help TODO
     (define-key joe-map (kbd "C-k C-h") '(lambda ()
@@ -473,7 +506,7 @@
 
     ;; shell TODO
     ;; in joe, the cursor does not change when the comand is appended.
-    (define-key joe-map (kbd "<escape> !") 'joe-insertcmd)
+    (define-key joe-map (kbd "<escape> !") 'joe-run)
     (define-key joe-map (kbd "C-k C-z") 'suspend-emacs)
     (define-key joe-map (kbd "C-k z") (kbd "C-k C-z"))
 
