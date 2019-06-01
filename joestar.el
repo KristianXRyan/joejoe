@@ -56,6 +56,7 @@
 (defvar joe-marklist nil "List of the currently used marks.")
 
 (defvar joe-prev-search nil "The last searched-for item.")
+(defvar joe-prev-search-action nil "The last search action.")
 
 (make-variable-buffer-local 'joe-mark-0)
 (make-variable-buffer-local 'joe-mark-1)
@@ -72,19 +73,45 @@
 (make-variable-buffer-local 'joe-nextmark)
 
 (make-variable-buffer-local 'joe-prev-search)
+(make-variable-buffer-local 'joe-prev-search-action)
 
 ;; non-interactive helper functions
 
-; TODO lambda-ize
-(defun joe-get-findstr ()
-  "Get the string to search for."
-  (if (null joe-prev-search)
-      (read-string "Find: ")
-    (read-string (format "Find [%s]: " joe-prev-search))))
+; TODO fix bug where it does not keep the value of joe-prev-search beyond one repitition
+(defun joe-get-findstr (prompt)
+  "If PROMPT is t ask user for search words.  If PROMPT is nil return joe-prev-search."
+  (setq joe-prev-search   (if (null joe-prev-search)
+                              (read-string "Find: ")
+                            (if prompt
+                                (read-string (format "Find [%s]: " joe-prev-search))
+                              joe-prev-search))))
 
-(defun joe-get-find-action ()
-  "Prompt the user for an action."
-  (read-string "(I)gnore (R)eplace (B)ackwards Bloc(K): "))
+(defun joe-get-find-action (prompt)
+  "If PROMPT as the user for an action.  Otherwise, return previous action."
+  (setq joe-prev-search-action (if (or prompt (null joe-prev-search))
+                                   (read-string "(I)gnore (R)eplace (B)ackwards Bloc(K): ")
+                                 joe-prev-search)))
+
+(defun joe-find-do (action str)
+  "Perform find ACTION on STR."
+  (cond ((string= action "R") ; replace
+         (message "kek"))
+        ((string= action "B") ; search backward
+         (search-backward str))
+        ((string= action "K") ; search block
+         (progn
+           (call-interactively 'narrow-to-region)
+           (goto-char (point-min))
+           (search-forward str)
+           (widen)))
+        ((search-forward str)))) ; default, search forward
+
+;; aliases
+(defalias 'joe-nbuf 'next-buffer)
+(defalias 'joe-pbuf 'previous-buffer)
+(defalias 'joe-reload 'revert-buffer)
+(defalias 'joe-tw0 'delete-window)
+(defalias 'joe-tw1 'delete-other-windows)
 
 (defun joe-todo-func ()
   "TODO func."
@@ -344,28 +371,25 @@
     (insert (shell-command-to-string com))
     (goto-char joe-cur-mark)))
 
+; CTR-s func TODO
+(defun joe-isrch ()
+  "Incremental search forward."
+  (interactive))
+
+(defun joe-qrepl (str)
+  "Search and replace STR."
+  (interactive (list (joe-get-findstr t)))
+  (joe-find-do joe-prev-search-action str))
+
+(defun joe-fnext (str action)
+  "Repeat previous search on STR and perform previous ACTION."
+  (interactive (list (joe-get-findstr nil) (joe-get-find-action nil)))
+  (joe-find-do action str))
+
 (defun joe-ffirst (str action)
   "Find next STR, perform ACTION."
-  (interactive (list (joe-get-findstr) (joe-get-find-action)))
-  (setq joe-prev-search str)
-  (cond ((string= action "R")
-         (progn
-           (message "TODO")))
-        ((string= action "B")
-         (search-backward str))
-        ((string= action "K")
-         (progn
-           (call-interactively 'narrow-to-region)
-           (goto-char (point-min))
-           (search-forward str)
-           (widen)))
-        ((search-forward str))))
-
-(defalias 'joe-nbuf 'next-buffer)
-(defalias 'joe-pbuf 'previous-buffer)
-(defalias 'joe-reload 'revert-buffer)
-(defalias 'joe-tw0 'delete-window)
-(defalias 'joe-tw1 'delete-other-windows)
+  (interactive (list (joe-get-findstr t) (joe-get-find-action t)))
+  (joe-find-do action str))
 
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map
@@ -554,26 +578,6 @@
   ;; keep cursor position while scrolling
   (setq scroll-preserve-screen-position 'always)
   (setq scroll-error-top-bottom nil)
-  (defvar undo-tree-map
-    (let ((map (make-sparse-keymap)))
-      ;; remap `undo' and `undo-only' to `undo-tree-undo'
-      (define-key map [remap undo] 'undo-tree-undo)
-      (define-key map [remap undo-only] 'undo-tree-undo)
-      ;; bind standard undo bindings (since these match redo counterparts)
-      (define-key map (kbd "C-/") 'undo-tree-undo)
-      (define-key map "\C-_" 'undo-tree-undo)
-      ;; redo doesn't exist normally, so define our own keybindings
-      (define-key map (kbd "C-?") 'undo-tree-redo)
-      (define-key map (kbd "M-_") 'undo-tree-redo)
-      ;; just in case something has defined `redo'...
-      (define-key map [remap redo] 'undo-tree-redo)
-      ;; we use "C-x u" for the undo-tree visualizer
-      (define-key map (kbd "s-x u") 'undo-tree-visualize)
-      ;; bind register commands
-      (define-key map (kbd "s-x r u") 'undo-tree-save-state-to-register)
-      (define-key map (kbd "s-x r U") 'undo-tree-restore-state-from-register)
-      ;; set keymap
-      (setq undo-tree-map map)))
   (undo-tree-mode t))
 
 (define-globalized-minor-mode global-joestar-mode joestar-mode
