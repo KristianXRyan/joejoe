@@ -241,7 +241,8 @@
   "Push a scratch buffer NAME into current window."
   (interactive "sName of buffer to edit: ")
   (generate-new-buffer (generate-new-buffer-name name))
-  (switch-to-buffer name))
+  (switch-to-buffer name)
+  (with-current-buffer name (text-mode)))
 
 (defun joe-insf (file-path)
   "Prompt the minibuffer to save the current buffer as FILE-PATH."
