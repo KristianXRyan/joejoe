@@ -122,6 +122,12 @@
       ;; for transient mark mode
       (setq deactivate-mark nil))))
 
+;; This exists so that joe-filt can mark the entire buffer beforehand if necessary, just like JOE.
+(defun joe-filter-command (com)
+  "Joe filt helper func.  Run COM on shell."
+  (interactive "sCommand to filter the region through: ")
+  (shell-command-on-region (mark) (point) com (current-buffer) t))
+
 ;; aliases
 (defalias 'joe-nbuf 'next-buffer)
 (defalias 'joe-pbuf 'previous-buffer)
@@ -134,7 +140,17 @@
 (defalias 'joe-retype 'redraw-frame)
 (defalias 'joe-shell 'suspend-emacs)
 (defalias 'joe-beep 'beep)
+(defalias 'joe-pgup 'scroll-down-command)
+(defalias 'joe-pgdn 'scroll-up-command)
+(defalias 'joe-dnslide 'next-line)
+(defalias 'joe-upslide 'previous-line)
+(defalias 'joe-rsrch 'isearch-backward)
 
+;; TODO
+(defun joe-arg (num)
+  "Prompt NUM of times to repeat a command."
+  (interactive "sNo. Times to repeat command: ")
+  )
 
 (defun joe-rtn ()
   "Insert return key."
@@ -455,6 +471,15 @@
   (interactive)
   (message "%s Col %d %d(0x%x) %s" (what-line) (current-column) (buffer-size) (buffer-size) buffer-file-coding-system))
 
+(defun joe-filt ()
+  "Filter region through shell command."
+  (interactive)
+  (if (use-region-p)
+      (call-interactively 'joe-filter-command)
+    (progn
+      (mark-whole-buffer)
+      (call-interactively 'joe-filter-command))))
+
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map
   (let ((joe-map (make-sparse-keymap)))
@@ -495,8 +520,8 @@
     (define-key joe-map (kbd "C-k u") (kbd "C-k C-u"))
     (define-key joe-map (kbd "C-k C-v") 'end-of-buffer)
     (define-key joe-map (kbd "C-k v") (kbd "C-k C-v"))
-    (define-key joe-map (kbd "C-u") 'scroll-down-command)
-    (define-key joe-map (kbd "C-v") 'scroll-up-command)
+    (define-key joe-map (kbd "C-u") 'joe-pgup)
+    (define-key joe-map (kbd "C-v") 'joe-pgdn)
     (define-key joe-map (kbd "C-e") 'end-of-line)
     (define-key joe-map (kbd "C-a") 'beginning-of-line-text)
     (define-key joe-map (kbd "C-k C-l") 'joe-line)
@@ -568,8 +593,8 @@
     (define-key joe-map (kbd "<escape> D") '(lambda() (interactive))) ; TODO ?
 
     ;; scroll
-    (define-key joe-map (kbd "<escape> w") 'scroll-down-line)
-    (define-key joe-map (kbd "<escape> z") 'scroll-up-line)
+    (define-key joe-map (kbd "<escape> w") 'joe-upslide)
+    (define-key joe-map (kbd "<escape> z") 'joe-dnslide)
     (define-key joe-map (kbd "<escape> <") 'scroll-left) ; TODO test
     (define-key joe-map (kbd "<escape> >") 'scroll-right) ; TODO test
 
