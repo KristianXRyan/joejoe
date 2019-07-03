@@ -145,6 +145,22 @@
 (defalias 'joe-dnslide 'next-line)
 (defalias 'joe-upslide 'previous-line)
 (defalias 'joe-rsrch 'isearch-backward)
+(defalias 'joe-dellin 'kill-whole-line)
+(defalias 'joe-delw 'kill-word)
+(defalias 'joe-exsave 'save-buffers-kill-emacs)
+
+(defun joe-lose ()
+  "Kill buffer.  Replace buffer with scratch buffer."
+  (interactive)
+  (let ((cur-buffer-name (buffer-name)))
+    (kill-buffer)
+    (if (string= cur-buffer-name (buffer-name))
+        nil
+      (joe-scratch "Unnamed"))))
+
+(defun joe-cancel ()
+  "Escape."
+  (interactive))
 
 ;; TODO
 (defun joe-arg (num)
@@ -192,16 +208,19 @@
   (interactive)
   (setq this-command-keys-shift-translated t)
   (call-interactively 'forward-char))
+
 (defun joe-ctr-selection-left ()
   "Control selection to left char."
   (interactive)
   (setq this-command-keys-shift-translated t)
   (call-interactively 'backward-char))
+
 (defun joe-ctr-selection-up ()
   "Control selection up one line."
   (interactive)
   (setq this-command-keys-shift-translated t)
   (call-interactively 'previous-line))
+
 (defun joe-ctr-selection-down ()
   "Control selection down one line."
   (interactive)
@@ -214,8 +233,10 @@
   (forward-line (* -1 (count-lines 1 (point))))
   (forward-line (1- (string-to-number num))))
 
-(defun joe-backspace ()
-  "Redefine the what the backspace key does to mimic vim."
+
+;; TODO make more accurate to joe.
+(defun joe-backs ()
+  "Redefine the what the backspace key does to mimic joe."
   (interactive)
   (cond ((bolp)
          (delete-char -1)
@@ -231,7 +252,7 @@
          (let ((backward-delete-char-untabify-method 'hungry))
            (call-interactively 'backward-delete-char-untabify)))))
 
-(defun joe-delete-word-left ()
+(defun joe-backw ()
   "Kill the word to the left of the cursor."
   (interactive)
   (call-interactively 'backward-word)
@@ -541,10 +562,10 @@
     (define-key joe-map (kbd "<escape> l") 'flyspell-buffer)
 
     ;; delete
-    (define-key joe-map (kbd "<backspace>") 'joe-backspace)
-    (define-key joe-map (kbd "C-y") 'kill-whole-line)
-    (define-key joe-map (kbd "C-w") 'kill-word)
-    (define-key joe-map (kbd "C-o") 'joe-delete-word-left)
+    (define-key joe-map (kbd "<backspace>") 'joe-backs)
+    (define-key joe-map (kbd "C-y") 'joe-dellin)
+    (define-key joe-map (kbd "C-w") 'joe-delw)
+    (define-key joe-map (kbd "C-o") 'joe-backw)
     (define-key joe-map (kbd "<escape> o") '(lambda ()
                                          "Kill to the beginning of the line before point."
                                          (kill-line 0)))
@@ -552,11 +573,9 @@
     (define-key joe-map (kbd "C-_") 'joe-undo)
 
     ;; exit
-    (define-key joe-map (kbd "C-k C-x") 'save-buffers-kill-emacs)
+    (define-key joe-map (kbd "C-k C-x") 'joe-exsave)
     (define-key joe-map (kbd "C-k x") (kbd "C-k C-x"))
-    (define-key joe-map (kbd "C-c") '(lambda ()
-                                       "Abort."
-                                       (interactive)))
+    (define-key joe-map (kbd "C-c") 'joe-cancel)
     (define-key joe-map (kbd "C-k C-q") 'kill-emacs)
     (define-key joe-map (kbd "C-k q") (kbd "C-k C-q"))
 
