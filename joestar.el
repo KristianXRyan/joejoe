@@ -76,6 +76,8 @@
 (make-variable-buffer-local 'joe-prev-search-action)
 
 ;; non-interactive helper functions
+;; these functions exist to break-up functionality and do not necessarily
+;; correspond to any function in Joe.
 
 ; TODO fix bug where it does not keep the value of joe-prev-search beyond one repitition
 (defun joe-get-findstr (prompt)
@@ -95,7 +97,7 @@
 (defun joe-find-do (action str)
   "Perform find ACTION on STR."
   (cond ((string= action "R") ; replace
-         (message "kek"))
+         (joe-replace str (read-string "Replace with: ")))
         ((string= action "B") ; search backward
          (search-backward str))
         ((string= action "K") ; search block
@@ -106,12 +108,64 @@
            (widen)))
         ((search-forward str)))) ; default, search forward
 
+(defun joe-replace (str repl)
+  "Replace instances of STR with REPL."
+  )
+
+(defun joe-shift-region (distance)
+  "Shift the region DISTANCE number of whitespace."
+  (let ((mark (mark)))
+    (save-excursion
+      (indent-rigidly (region-beginning) (region-end) distance)
+      (push-mark mark t t)
+      ;; Tell the command loop not to deactivate the mark
+      ;; for transient mark mode
+      (setq deactivate-mark nil))))
+
 ;; aliases
 (defalias 'joe-nbuf 'next-buffer)
 (defalias 'joe-pbuf 'previous-buffer)
 (defalias 'joe-reload 'revert-buffer)
-(defalias 'joe-tw0 'delete-window)
+(defalias 'joe-tw0 'delete-window) ; TODO probably should implement a function
 (defalias 'joe-tw1 'delete-other-windows)
+(defalias 'joe-paragraph 'fill-paragraph)
+(defalias 'joe-isrch 'isearch-forward)
+(defalias 'joe-notmod 'not-modified)
+(defalias 'joe-retype 'redraw-frame)
+(defalias 'joe-shell 'suspend-emacs)
+(defalias 'joe-beep 'beep)
+
+
+(defun joe-rtn ()
+  "Insert return key."
+  (interactive)
+  (insert (kbd "<RET>")))
+
+(defun joe-txt (str)
+  "Insert STR into buffer."
+  (interactive "sInsert: ")
+  (insert str))
+
+(defun joe-name()
+  "Insert current file name into the buffer."
+  (interactive)
+  (insert (file-relative-name (buffer-file-name) default-directory)))
+
+; TODO get the locale
+(defun joe-language()
+  "Insert the language in the current buffer."
+  (interactive)
+  (insert current-language-environment))
+
+(defun joe-charset()
+  "Insert the language in the current buffer."
+  (interactive)
+  (insert current-language-environment))
+
+(defun joe-msg(str)
+  "Display a message STR."
+  (interactive "sMessage: ")
+  (message "%s" str))
 
 (defun joe-todo-func ()
   "TODO func."
@@ -206,9 +260,19 @@
   (insert "\n"))
 
 (defun joe-insc ()
-  "Insert a space character."
+  "Insert a space."
   (interactive)
   (insert " "))
+
+(defun joe-lindent ()
+  "Indent region to the left."
+  (interactive)
+  (joe-shift-region (- tab-width)))
+
+(defun joe-rindent ()
+  "Indent region to the right."
+  (interactive)
+  (joe-shift-region  tab-width))
 
 (defun joe-nextw ()
   "Move to the next window."
@@ -362,7 +426,6 @@
         (push-mark)
         (goto-char joe-nextmark))))
 
-; TODO fix bug where this only works if called from mb
 (defun joe-run (com)
   "Append the output of shell command COM to current buffer."
   (interactive "sProgram to run: ")
@@ -370,11 +433,6 @@
     (call-interactively 'end-of-buffer)
     (insert (shell-command-to-string com))
     (goto-char joe-cur-mark)))
-
-; CTR-s func TODO
-(defun joe-isrch ()
-  "Incremental search forward."
-  (interactive))
 
 (defun joe-qrepl (str)
   "Search and replace STR."
@@ -390,6 +448,11 @@
   "Find next STR, perform ACTION."
   (interactive (list (joe-get-findstr t) (joe-get-find-action t)))
   (joe-find-do action str))
+
+(defun joe-stat ()
+  "Print status to the echo-area."
+  (interactive)
+  (message "%s Col %d %d(0x%x) %s" (what-line) (current-column) (buffer-size) (buffer-size) buffer-file-coding-system))
 
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map
@@ -417,6 +480,12 @@
                                            (interactive "FName of file to write (C-k h for help): ")
                                            (write-region (region-beginning) (region-end) file-path)))
 
+    (define-key joe-map (kbd "C-k C-,") 'joe-lindent)
+    (define-key joe-map (kbd "C-k ,") (kbd "C-k C-,"))
+    (define-key joe-map (kbd "C-k C-.") 'joe-rindent)
+    (define-key joe-map (kbd "C-k .") (kbd "C-k C-."))
+    
+
     
     ;; goto
     (define-key joe-map (kbd "C-z") 'backward-word)
@@ -425,8 +494,8 @@
     (define-key joe-map (kbd "C-k u") (kbd "C-k C-u"))
     (define-key joe-map (kbd "C-k C-v") 'end-of-buffer)
     (define-key joe-map (kbd "C-k v") (kbd "C-k C-v"))
-    (define-key joe-map (kbd "C-u") 'scroll-down)
-    (define-key joe-map (kbd "C-v") 'scroll-up)
+    (define-key joe-map (kbd "C-u") 'scroll-down-command)
+    (define-key joe-map (kbd "C-v") 'scroll-up-command)
     (define-key joe-map (kbd "C-e") 'end-of-line)
     (define-key joe-map (kbd "C-a") 'beginning-of-line-text)
     (define-key joe-map (kbd "C-k C-l") 'joe-line)
@@ -434,12 +503,12 @@
     (define-key joe-map (kbd "C-g") 'joe-todo-func) ; TODO
     
     ;; misc
-    (define-key joe-map (kbd "C-k C-j") 'joe-todo-func)
+    (define-key joe-map (kbd "C-k C-j") 'joe-paragraph)
     (define-key joe-map (kbd "C-k j") (kbd "C-k C-j"))
     (define-key joe-map (kbd "C-k C-a") 'center-line)
     (define-key joe-map (kbd "C-k a") (kbd "C-k C-a"))
-    (define-key joe-map (kbd "<C-k C-space>") 'joe-todo-func)
-    (define-key joe-map (kbd "<C-k space>") (kbd "<C-k C-space>"))
+    (define-key joe-map (kbd "C-k C-SPC") 'joe-stat)
+    (define-key joe-map (kbd "C-k SPC") (kbd "C-k SPC"))
 
     ;; spell
     (define-key joe-map (kbd "<escape> n") 'flyspell-word)
@@ -529,6 +598,7 @@
     
 
     ;; shell TODO
+    
     ;; in joe, the cursor does not change when the comand is appended.
     (define-key joe-map (kbd "<escape> !") 'joe-run)
     (define-key joe-map (kbd "C-k C-z") 'suspend-emacs)
@@ -575,9 +645,11 @@
   (setq-default scroll-up-aggressively 0.01
                 scroll-down-aggressively 0.01)
 
+  
   ;; keep cursor position while scrolling
   (setq scroll-preserve-screen-position 'always)
-  (setq scroll-error-top-bottom nil)
+  (setq scroll-error-top-bottom t)
+  
   (undo-tree-mode t))
 
 (define-globalized-minor-mode global-joestar-mode joestar-mode

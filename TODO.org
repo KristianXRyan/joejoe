@@ -5,3 +5,6 @@ Implement joe functions
 * lambda function for opening up a terminal emulator
 ** More customizability in general
 * Move undo-tree remaps out
+* Joe-style mode-line
+* Custom font faces
+* TODAY: Fix bug to C-v C-u all the way to top or bottom

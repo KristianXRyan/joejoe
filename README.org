@@ -35,13 +35,10 @@ To fix this problem add this to your config /(before Joestar is loaded)/.
 If you are using use-package this would be done with *:init*.
 * Known Issues
 The keyboard shortcut to insert a shell command currently does not work properly. 
-In order to insert shell output call the joe-insertcmd function directly.
-* TODO Goals for Next Major Version
-- [X] Find function
-- [ ] Regions
-- [ ] Keyboard Macros
+In order to insert shell output call the joe-run function directly.
 
 * Basic Tutorial
+For a more detailed tutorial, see tutorial.org; or *C-k C-h* in Emacs for help.
 ** A note on Control key sequences
 Because of the way that Joe works *C-k C-e* is the same as *C-k e*. 
 However, Emacs considers these to be different key sequences. 
@@ -78,3 +75,7 @@ Down one screen.
 Saving
 - *C-k C-f*
 Joe's find function.
+* TODO Goals for Next Major Version
+- [X] Find function
+- [ ] Regions
+- [ ] Keyboard Macros
