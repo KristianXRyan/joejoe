@@ -5,7 +5,7 @@
 ;;; Author: Ryan Jeffrey <pwishie@gmail.com>
 ;;; Created: 2019-05-12
 ;;; Keywords: joe wordstar emulation editor
-;;; Version: 0.2
+;;; Version: 0.5
 ;;; Package-Requires: ((emacs "24.2") (undo-tree "0.8.5"))
 ;;; URL: https://github.com/Ma11ock/joestar
 
@@ -33,10 +33,7 @@
 
 ;;; Code:
 
-;;; TODO: Confine buffers to certain windows; better relative line number support with goto-line
-;;; TODO: remake with lambdas
-
-;;; TODO have a cons cell of a mark and its id?
+;;; TODO: better relative line number support with goto-line
 
 ;;; set mark variables
 (defvar joe-mark-0 nil "Mark 0.")
@@ -132,7 +129,7 @@
 (defalias 'joe-nbuf 'next-buffer)
 (defalias 'joe-pbuf 'previous-buffer)
 (defalias 'joe-reload 'revert-buffer)
-(defalias 'joe-tw0 'delete-window) ; TODO probably should implement a function
+(defalias 'joe-tw0 'delete-window)
 (defalias 'joe-tw1 'delete-other-windows)
 (defalias 'joe-paragraph 'fill-paragraph)
 (defalias 'joe-isrch 'isearch-forward)
@@ -148,9 +145,30 @@
 (defalias 'joe-dellin 'kill-whole-line)
 (defalias 'joe-delw 'kill-word)
 (defalias 'joe-exsave 'save-buffers-kill-emacs)
+(defalias 'joe-querysave 'save-some-buffers)
+(defalias 'joe-killjoe 'kill-emacs)
+(defalias 'joe-nextword 'forward-word)
+(defalias 'joe-prevword 'backward-word)
+(defalias 'joe-tos 'beginning-of-buffer)
+(defalias 'joe-bol 'beginning-of-line-text)
+(defalias 'joe-uparw 'previous-line)
+(defalias 'joe-eol 'end-of-line)
+(defalias 'joe-home 'joe-bol)
+(defalias 'joe-bof 'joe-tos)
+(defalias 'joe-bos 'end-of-buffer)
+(defalias 'joe-dnarw 'next-line)
+(defalias 'joe-rtarw 'forward-char)
+(defalias 'joe-ltarw 'backward-char)
+(defalias 'joe-cd 'cd)
+(defalias 'joe-savenow 'save-buffer)
+
+(defun joe-byte (byte)
+  "Go to byte BYTE."
+  (interactive "nGo to byte: ")
+  (goto-char byte))
 
 (defun joe-lose ()
-  "Kill buffer.  Replace buffer with scratch buffer."
+  "Kill buffer and replace it with a scratch buffer."
   (interactive)
   (let ((cur-buffer-name (buffer-name)))
     (kill-buffer)
@@ -158,9 +176,23 @@
         nil
       (joe-scratch "Unnamed"))))
 
+(defun joe-col (col)
+  "Go to column COL."
+  (interactive "nGo to column: ")
+  (move-to-column col t))
+
 (defun joe-cancel ()
   "Escape."
-  (interactive))
+  (interactive)
+  (keyboard-escape-quit)
+  (if (= (count-windows) 1)
+      (when (y-or-n-p "Kill Emacs? ")
+          (joe-killjoe))
+    (joe-tw0)))
+
+(defun joe-debug ()
+  (interactive)
+  (message "%d" (count-windows)))
 
 ;; TODO
 (defun joe-arg (num)
@@ -178,23 +210,24 @@
   (interactive "sInsert: ")
   (insert str))
 
-(defun joe-name()
+; TODO bug where this does not work with scratch files (maybe because it doesn't have a default-dir?)
+(defun joe-name ()
   "Insert current file name into the buffer."
   (interactive)
   (insert (file-relative-name (buffer-file-name) default-directory)))
 
 ; TODO get the locale
-(defun joe-language()
+(defun joe-language ()
   "Insert the language in the current buffer."
   (interactive)
   (insert current-language-environment))
 
-(defun joe-charset()
+(defun joe-charset ()
   "Insert the language in the current buffer."
   (interactive)
   (insert current-language-environment))
 
-(defun joe-msg(str)
+(defun joe-msg (str)
   "Display a message STR."
   (interactive "sMessage: ")
   (message "%s" str))
@@ -269,10 +302,16 @@
   (interactive)
   (call-interactively 'undo-tree-undo))
 
-; TODO
 (defun joe-reloadall ()
-  "Revert all unmodified buffers."
-  (interactive))
+  "Revert all buffers."
+  (interactive)
+  (let ((num-refreshed 0))
+    (dolist (buf (buffer-list))
+      (with-current-buffer buf
+        (when (and (buffer-file-name) (file-exists-p (buffer-file-name)) (not (buffer-modified-p)))
+          (revert-buffer t t t)
+          (setq num-refreshed (+ num-refreshed 1))))
+      (message "%d files reloaded." num-refreshed))))
 
 (defun joe-scratch (name)
   "Push a scratch buffer NAME into current window."
@@ -456,6 +495,7 @@
       (progn
         (push-mark)
         (goto-char joe-lastmark))))
+
 (defun joe-goprevmark ()
   "Move point to next mark."
   (interactive)
@@ -498,8 +538,12 @@
   (if (use-region-p)
       (call-interactively 'joe-filter-command)
     (progn
-      (mark-whole-buffer)
+      (call-interactively 'mark-whole-buffer)
       (call-interactively 'joe-filter-command))))
+
+(defun joe-delbol ()
+  "Delete to the beginning of the line."
+  (kill-line 0))
 
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map
@@ -535,16 +579,16 @@
 
     
     ;; goto
-    (define-key joe-map (kbd "C-z") 'backward-word)
-    (define-key joe-map (kbd "C-x") 'forward-word)
-    (define-key joe-map (kbd "C-k C-u") 'beginning-of-buffer)
+    (define-key joe-map (kbd "C-z") 'joe-prevword)
+    (define-key joe-map (kbd "C-x") 'joe-nextword)
+    (define-key joe-map (kbd "C-k C-u") 'joe-tos)
     (define-key joe-map (kbd "C-k u") (kbd "C-k C-u"))
-    (define-key joe-map (kbd "C-k C-v") 'end-of-buffer)
+    (define-key joe-map (kbd "C-k C-v") 'joe-bos)
     (define-key joe-map (kbd "C-k v") (kbd "C-k C-v"))
     (define-key joe-map (kbd "C-u") 'joe-pgup)
     (define-key joe-map (kbd "C-v") 'joe-pgdn)
-    (define-key joe-map (kbd "C-e") 'end-of-line)
-    (define-key joe-map (kbd "C-a") 'beginning-of-line-text)
+    (define-key joe-map (kbd "C-e") 'joe-eol)
+    (define-key joe-map (kbd "C-a") 'joe-bol)
     (define-key joe-map (kbd "C-k C-l") 'joe-line)
     (define-key joe-map (kbd "C-k l") (kbd "C-k C-l"))
     (define-key joe-map (kbd "C-g") 'joe-todo-func) ; TODO
@@ -566,16 +610,14 @@
     (define-key joe-map (kbd "C-y") 'joe-dellin)
     (define-key joe-map (kbd "C-w") 'joe-delw)
     (define-key joe-map (kbd "C-o") 'joe-backw)
-    (define-key joe-map (kbd "<escape> o") '(lambda ()
-                                         "Kill to the beginning of the line before point."
-                                         (kill-line 0)))
+    (define-key joe-map (kbd "<escape> o") 'joe-delbol)
     (define-key joe-map (kbd "C-^") 'joe-redo)
     (define-key joe-map (kbd "C-_") 'joe-undo)
 
     ;; exit
     (define-key joe-map (kbd "C-k C-x") 'joe-exsave)
     (define-key joe-map (kbd "C-k x") (kbd "C-k C-x"))
-    (define-key joe-map (kbd "C-c") 'joe-cancel)
+    (define-key joe-map (kbd "C-g") 'joe-cancel)
     (define-key joe-map (kbd "C-k C-q") 'kill-emacs)
     (define-key joe-map (kbd "C-k q") (kbd "C-k C-q"))
 
@@ -588,7 +630,6 @@
     (define-key joe-map (kbd "C-k d") (kbd "C-k C-d"))
     (define-key joe-map (kbd "C-k C-`") 'revert-buffer)
     (define-key joe-map (kbd "C-k `") (kbd "C-k C-`"))
-    (define-key joe-map (kbd "C-c") 'joe-tw0)
     
     ;; search
     (define-key joe-map (kbd "C-k C-f") 'joe-ffirst)
@@ -638,15 +679,12 @@
                                            "Show one / All."
                                            (interactive))) ; TODO, cuz I don't even know what it does in joe
     (define-key joe-map (kbd "C-k i") (kbd "C-k C-i"))
-    (define-key joe-map (kbd "M-+")  'text-scale-increase)
-    (define-key joe-map (kbd "M--")  'text-scale-decrease)
-    
 
     ;; shell TODO
     
-    ;; in joe, the cursor does not change when the comand is appended.
+    ;; in joe, the cursor does not change when the command is appended.
     (define-key joe-map (kbd "<escape> !") 'joe-run)
-    (define-key joe-map (kbd "C-k C-z") 'suspend-emacs)
+    (define-key joe-map (kbd "C-k C-z") 'joe-shell)
     (define-key joe-map (kbd "C-k z") (kbd "C-k C-z"))
 
     ;; bookmark
@@ -669,7 +707,6 @@
     ;; buffer
     (define-key joe-map (kbd "<escape> u") 'joe-nbuf)
     (define-key joe-map (kbd "<escape> v") 'joe-pbuf)
-    
     
     joe-map)
   "The joestar-mode keymaps.")
@@ -694,6 +731,10 @@
   ;; keep cursor position while scrolling
   (setq scroll-preserve-screen-position 'always)
   (setq scroll-error-top-bottom t)
+
+  (save-place-mode t)
+
+  ; maybe?
   
   (undo-tree-mode t))
 
