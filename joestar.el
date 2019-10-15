@@ -162,6 +162,8 @@
 (defalias 'joe-cd 'cd)
 (defalias 'joe-savenow 'save-buffer)
 
+;; functions
+
 (defun joe-byte (byte)
   "Go to byte BYTE."
   (interactive "nGo to byte: ")
@@ -210,11 +212,14 @@
   (interactive "sInsert: ")
   (insert str))
 
-; TODO bug where this does not work with scratch files (maybe because it doesn't have a default-dir?)
+; TODO bug where this does not work with scratch files
 (defun joe-name ()
   "Insert current file name into the buffer."
   (interactive)
-  (insert (file-relative-name (buffer-file-name) default-directory)))
+  (if (buffer-file-name)
+      (progn
+        (insert (file-relative-name (buffer-file-name) default-directory)))
+    (insert (buffer-name))))
 
 ; TODO get the locale
 (defun joe-language ()
