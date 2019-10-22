@@ -78,7 +78,6 @@ Joe's find function.
 * TODO Goals for Major Version
 
 - [X] Find function
-- [ ] Regions
 - [ ] Keyboard Macro
 - [ ] Cancel features
 - [ ] Help buffer

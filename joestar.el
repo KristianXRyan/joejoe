@@ -196,12 +196,6 @@
   (interactive)
   (message "%d" (count-windows)))
 
-;; TODO
-(defun joe-arg (num)
-  "Prompt NUM of times to repeat a command."
-  (interactive "sNo. Times to repeat command: ")
-  )
-
 (defun joe-rtn ()
   "Insert return key."
   (interactive)
@@ -212,7 +206,6 @@
   (interactive "sInsert: ")
   (insert str))
 
-; TODO bug where this does not work with scratch files
 (defun joe-name ()
   "Insert current file name into the buffer."
   (interactive)
@@ -221,7 +214,6 @@
         (insert (file-relative-name (buffer-file-name) default-directory)))
     (insert (buffer-name))))
 
-; TODO get the locale
 (defun joe-language ()
   "Insert the language in the current buffer."
   (interactive)
@@ -272,7 +264,6 @@
   (forward-line (1- (string-to-number num))))
 
 
-;; TODO make more accurate to joe.
 (defun joe-backs ()
   "Redefine the what the backspace key does to mimic joe."
   (interactive)
@@ -739,9 +730,8 @@
 
   (save-place-mode t)
 
-  ; maybe?
-  
-  (undo-tree-mode t))
+  (unless (boundp 'joe-no-undo-tree)
+    (undo-tree-mode t)))
 
 (define-globalized-minor-mode global-joestar-mode joestar-mode
   (lambda () (joestar-mode 1)))
