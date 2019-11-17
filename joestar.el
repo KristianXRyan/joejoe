@@ -163,6 +163,9 @@
 (defalias 'joe-cd 'cd)
 (defalias 'joe-savenow 'save-buffer)
 (defalias 'joe-delch 'delete-char)
+(defalias 'joe-groww 'enlarge-window)
+(defalias 'joe-shrinkw 'shrink-window)
+(defalias 'joe-bufed 'find-file)
 
 ;; functions
 
@@ -627,8 +630,8 @@
     (define-key joe-map (kbd "C-k q") (kbd "C-k C-q"))
 
     ;; file
-    (define-key joe-map (kbd "C-k C-e") 'find-file)
-    (define-key joe-map (kbd "C-k e") 'find-file)
+    (define-key joe-map (kbd "C-k C-e") 'joe-bufed)
+    (define-key joe-map (kbd "C-k e") (kbd "C-k C-e"))
     (define-key joe-map (kbd "C-k C-r") 'joe-insf)
     (define-key joe-map (kbd "C-k r") (kbd "C-k C-r"))
     (define-key joe-map (kbd "C-k C-d") 'joe-save)
@@ -672,9 +675,9 @@
     ;; window
     (define-key joe-map (kbd "C-k C-o") 'split-window-vertically)
     (define-key joe-map (kbd "C-k o") (kbd "C-k C-o"))
-    (define-key joe-map (kbd "C-k C-g") 'enlarge-window)
+    (define-key joe-map (kbd "C-k C-g") 'joe-groww) ; TODO horizontal window support
     (define-key joe-map (kbd "C-k g") (kbd "C-k C-g"))
-    (define-key joe-map (kbd "C-k C-t") 'shrink-window)
+    (define-key joe-map (kbd "C-k C-t") 'joe-shrinkw)
     (define-key joe-map (kbd "C-k t") (kbd "C-k C-t"))
     (define-key joe-map (kbd "C-k C-n") 'joe-nextw)
     (define-key joe-map (kbd "C-k n") (kbd "C-k C-n"))
