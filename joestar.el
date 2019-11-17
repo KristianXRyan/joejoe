@@ -143,6 +143,7 @@
 (defalias 'joe-upslide 'previous-line)
 (defalias 'joe-rsrch 'isearch-backward)
 (defalias 'joe-dellin 'kill-whole-line)
+(defalias 'joe-deleol 'kill-line)
 (defalias 'joe-delw 'kill-word)
 (defalias 'joe-exsave 'save-buffers-kill-emacs)
 (defalias 'joe-querysave 'save-some-buffers)
@@ -161,6 +162,7 @@
 (defalias 'joe-ltarw 'backward-char)
 (defalias 'joe-cd 'cd)
 (defalias 'joe-savenow 'save-buffer)
+(defalias 'joe-delch 'delete-char)
 
 ;; functions
 
@@ -348,14 +350,18 @@
   (joe-shift-region  tab-width))
 
 (defun joe-nextw ()
-  "Move to the next window."
+  "Move to the next window, or buffer if there is only one."
   (interactive)
-  (other-window 1))
+  (if (= (length (window-list)) 1)
+      (next-buffer)
+    (other-window 1)))
 
 (defun joe-prevw ()
-  "Move to the next window."
+  "Move to the previous window, or buffer if there is only one."
   (interactive)
-  (other-window -1))
+    (if (= (length (window-list)) 1)
+      (previous-buffer)
+      (other-window -1)))
 
 (defun joe-setmark (sid)
   "Set mark SID."
@@ -539,6 +545,7 @@
 
 (defun joe-delbol ()
   "Delete to the beginning of the line."
+  (interactive)
   (kill-line 0))
 
 ;;; setting joestar's wordstar-like keybindings
@@ -609,6 +616,8 @@
     (define-key joe-map (kbd "<escape> o") 'joe-delbol)
     (define-key joe-map (kbd "C-^") 'joe-redo)
     (define-key joe-map (kbd "C-_") 'joe-undo)
+    (define-key joe-map (kbd "C-d") 'joe-delch)
+    
 
     ;; exit
     (define-key joe-map (kbd "C-k C-x") 'joe-exsave)
