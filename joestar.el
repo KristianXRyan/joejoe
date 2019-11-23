@@ -274,7 +274,9 @@
 (defun joe-backs ()
   "Redefine the what the backspace key does to mimic joe."
   (interactive)
-  (cond ((bolp)
+  (if buffer-read-only                      ; do the normal backspacing if buffer is readonly
+      (setq unread-command-events (listify-key-sequence (kbd "DEL")))
+    (cond ((bolp)
          (delete-char -1)
          (indent-according-to-mode)
          (when (looking-at "\\([ \t]+\\)[^ \t]")
@@ -286,7 +288,7 @@
          (indent-according-to-mode))
         (t
          (let ((backward-delete-char-untabify-method 'hungry))
-           (call-interactively 'backward-delete-char-untabify)))))
+           (call-interactively 'backward-delete-char-untabify))))))
 
 (defun joe-backw ()
   "Kill the word to the left of the cursor."
