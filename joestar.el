@@ -107,7 +107,7 @@
 
 (defun joe-replace (str repl)
   "Replace instances of STR with REPL."
-  )
+  ()) ; TODO
 
 (defun joe-shift-region (distance)
   "Shift the region DISTANCE number of whitespace."
@@ -165,7 +165,9 @@
 (defalias 'joe-delch 'delete-char)
 (defalias 'joe-groww 'enlarge-window)
 (defalias 'joe-shrinkw 'shrink-window)
-(defalias 'joe-bufed 'find-file)
+(defalias 'joe-edit 'find-file)
+(defalias 'joe-bufed 'list-buffers)
+
 
 ;; functions
 
@@ -191,11 +193,11 @@
 (defun joe-cancel ()
   "Escape."
   (interactive)
-  (keyboard-escape-quit)
-  (if (= (count-windows) 1)
+  (unless (keyboard-escape-quit)
+    (if (= (count-windows) 2)
       (when (y-or-n-p "Kill Emacs? ")
           (joe-killjoe))
-    (joe-tw0)))
+    (joe-tw0))))
 
 (defun joe-debug ()
   (interactive)
@@ -527,6 +529,7 @@
   (interactive (list (joe-get-findstr nil) (joe-get-find-action nil)))
   (joe-find-do action str))
 
+; TODO does not replace yet
 (defun joe-ffirst (str action)
   "Find next STR, perform ACTION."
   (interactive (list (joe-get-findstr t) (joe-get-find-action t)))
@@ -597,7 +600,6 @@
     (define-key joe-map (kbd "C-a") 'joe-bol)
     (define-key joe-map (kbd "C-k C-l") 'joe-line)
     (define-key joe-map (kbd "C-k l") (kbd "C-k C-l"))
-    (define-key joe-map (kbd "C-g") 'joe-todo-func) ; TODO
     
     ;; misc
     (define-key joe-map (kbd "C-k C-j") 'joe-paragraph)
@@ -625,12 +627,12 @@
     ;; exit
     (define-key joe-map (kbd "C-k C-x") 'joe-exsave)
     (define-key joe-map (kbd "C-k x") (kbd "C-k C-x"))
-    (define-key joe-map (kbd "C-g") 'joe-cancel)
+    ;(define-key joe-map (kbd "C-g") 'joe-cancel)
     (define-key joe-map (kbd "C-k C-q") 'kill-emacs)
     (define-key joe-map (kbd "C-k q") (kbd "C-k C-q"))
 
     ;; file
-    (define-key joe-map (kbd "C-k C-e") 'joe-bufed)
+    (define-key joe-map (kbd "C-k C-e") 'joe-edit)
     (define-key joe-map (kbd "C-k e") (kbd "C-k C-e"))
     (define-key joe-map (kbd "C-k C-r") 'joe-insf)
     (define-key joe-map (kbd "C-k r") (kbd "C-k C-r"))
@@ -688,7 +690,9 @@
                                            (interactive))) ; TODO, cuz I don't even know what it does in joe
     (define-key joe-map (kbd "C-k i") (kbd "C-k C-i"))
 
-    ;; shell TODO
+    ;; shell
+    ;(define-key joe-map (kbd "<f1>") 'shell)
+    
     
     ;; in joe, the cursor does not change when the command is appended.
     (define-key joe-map (kbd "<escape> !") 'joe-run)
