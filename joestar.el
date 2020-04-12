@@ -35,6 +35,18 @@
 
 ;;; TODO: better relative line number support with goto-line
 
+
+;; block variables
+(defvar joe-block-mark-start nil "Start of block.")
+(defvar joe-block-mark-end   nil "End of block.")
+
+(defvar joe-block-is         nil "If T block is set.")
+(defvar joe-block-rect       nil "If T rectangular block operations.")
+(defvar joe-block-show       nil "If T block is showed in blockface face.")
+
+(defvar joe-stream           nil "Contains last defined Block.  Stream.")
+(defvar joe-rect             nil "Contains last defined Block.  Rectangle.")
+
 ;;; set mark variables
 (defvar joe-mark-0 nil "Mark 0.")
 (defvar joe-mark-1 nil "Mark 1.")
@@ -147,6 +159,18 @@
         ((= ?9 name) joe-macro-9)
         (t nil)))
 
+(defun joe-block-test ()
+  "Test if there is a Block or Start/End in current buffer."
+  (if (and joe-block-mark-start joe-block-mark-end)
+      (if (not (= (- joe-block-mark-end joe-block-mark-start) 0))
+	  ()
+	(message "Zero length Block..."))
+    (if joe-block-mark-start
+	(error "End of Block not set.")
+      (if joe-block-mark-end
+	  (error "Start of Block not set.")
+      (error "No Block")))))
+
 ;; aliases
 (defalias 'joe-nbuf 'next-buffer)
 (defalias 'joe-pbuf 'previous-buffer)
@@ -192,6 +216,131 @@
 
 ;; functions
 
+;;;;;;;;;;;;
+;; BLOCKS ;;
+;;;;;;;;;;;;
+
+(defface blockface
+ '((t :foreground  "gainsboro"
+       :background "dim gray"
+       ))
+  "Face for joestar-blocks."
+  :group 'joestar-mode)
+
+;; this one rearrange buffer faces in wormstar [and in font-lock-mode].
+(defun joe-refontify ()
+  "Rearrange faces."
+  (interactive)
+  (facemenu-add-face 'default (point-min) (point-max))
+;  (if (and (symbolp 'font-lock-mode) (null font-lock-mode))
+;      ()
+;    (font-lock-fontify-buffer))
+  (if joe-block-is
+      (progn
+	(facemenu-add-face 'blockface
+			   joe-block-mark-start joe-block-mark-end)
+	(setq joe-block-show t))))
+
+(defun joe-block-show-hide (&optional arg)
+  "Show/hide Block in blockface face."
+  (interactive "P")
+  (joe-block-test)
+  (cond ((null arg)
+	 (if joe-block-show
+	     (progn
+	       (facemenu-add-face 'default
+				  joe-block-mark-start joe-block-mark-end)
+	       (setq joe-block-show nil))
+	   (facemenu-add-face 'blockface
+			      joe-block-mark-start joe-block-mark-end)
+	   (setq joe-block-show t)))
+	((> (prefix-numeric-value arg) 0)
+	 (facemenu-add-face 'blockface
+			    joe-block-mark-start joe-block-mark-end)
+	 (setq joe-block-show t))
+	((< (prefix-numeric-value arg) 1)
+	 (facemenu-add-face 'default
+			    joe-block-mark-start joe-block-mark-end)
+	 (setq joe-block-show nil))))
+
+
+(defun joe-block-unset ()
+  "Unset Block in current buffer."
+  (interactive)
+;; normal face
+  (if (and joe-block-mark-start joe-block-mark-end)
+      (facemenu-add-face 'default joe-block-mark-start joe-block-mark-end))
+  (setq joe-block-mark-start nil
+	joe-block-mark-end nil
+	joe-block-is nil
+	joe-block-show nil)
+  (joe-refontify)
+  (message "Block unset."))
+
+
+(defun joe-block-start (&optional arg)
+  "Start of block. With arg redefine Start of Block."
+  (interactive "P")
+  (if arg
+      (joe-block-new-start)
+    (if joe-block-is
+      (joe-block-unset))
+    (if (null joe-block-mark-end)
+	(progn
+	  (setq joe-block-mark-start (point-marker))
+	  (message "Block Start marked. Not End."))
+      (if ( < (point-marker) joe-block-mark-end)
+	    (setq joe-block-mark-start (point-marker))
+	(setq joe-block-mark-start joe-block-mark-end
+	      joe-block-mark-end (point-marker)))
+      (setq joe-rect (extract-rectangle joe-block-mark-start joe-block-mark-end)
+	    joe-stream (buffer-substring joe-block-mark-start joe-block-mark-end)
+	    joe-block-is t
+	    joe-block-show t)
+      ;; default Block is highlighted in blockface face
+      (facemenu-add-face 'blockface joe-block-mark-start joe-block-mark-end)
+      (message "Block defined. Copied in global register."))))
+
+(defun joe-block-end (&optional arg)
+  "End of block. With arg redefine End of Block."
+  (interactive "P")
+  (if arg
+      (joe-block-new-end) ; unset of prev block
+    (if joe-block-is
+	(joe-block-unset))
+    (if (null joe-block-mark-start)
+	(progn
+	  (setq joe-block-mark-end (point-marker))
+	  (message "Block End marked. Not Start."))
+      (if ( > (point-marker) joe-block-mark-start)
+	  (setq joe-block-mark-end (point-marker))
+	(setq joe-block-mark-end joe-block-mark-start
+	      joe-block-mark-start (point-marker)))
+      (setq joe-rect (extract-rectangle joe-block-mark-start joe-block-mark-end)
+	    joe-stream (buffer-substring joe-block-mark-start joe-block-mark-end)
+	    joe-block-is t
+	    joe-block-show t)
+      (facemenu-add-face 'blockface joe-block-mark-start joe-block-mark-end)
+      (message "Block defined. Copied in global register."))))
+
+(defun joe-block-move ()
+  "Move block to current cursor position."
+  (interactive)
+  (joe-block-test)
+  (if joe-block-show
+      (joe-block-show-hide 0))
+  (push-mark joe-block-mark-start)
+  (if joe-block-rect
+      (progn
+	(kill-rectangle joe-block-mark-start joe-block-mark-end)
+	(yank-rectangle))
+    (kill-region joe-block-mark-start joe-block-mark-end)
+    (yank))
+;; Unset block: no problems!
+  (joe-block-unset))
+
+
+;; end
 ;; TODO does not work
 (defun joe-record (name)
   "Record a keyboard macro and save it to NAME."
