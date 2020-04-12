@@ -1,11 +1,11 @@
 ;;; package --- summary Wordstar/joe compatibility mode.
 
-;;; Copyright (C) Ryan Jeffrey 2019
+;;; Copyright (C) Ryan Jeffrey 2020
 
 ;;; Author: Ryan Jeffrey <pwishie@gmail.com>
 ;;; Created: 2019-05-12
 ;;; Keywords: joe wordstar emulation editor
-;;; Version: 0.5
+;;; Version: 0.5.1
 ;;; Package-Requires: ((emacs "24.2") (undo-tree "0.8.5"))
 ;;; URL: https://github.com/Ma11ock/joestar
 
@@ -54,6 +54,18 @@
 
 (defvar joe-prev-search nil "The last searched-for item.")
 (defvar joe-prev-search-action nil "The last search action.")
+
+(defvar joe-macro-0 nil "Macro 0.")
+(defvar joe-macro-1 nil "Macro 1.")
+(defvar joe-macro-2 nil "Macro 2.")
+(defvar joe-macro-3 nil "Macro 3.")
+(defvar joe-macro-4 nil "Macro 4.")
+(defvar joe-macro-5 nil "Macro 5.")
+(defvar joe-macro-6 nil "Macro 6.")
+(defvar joe-macro-7 nil "Macro 7.")
+(defvar joe-macro-8 nil "Macro 8.")
+(defvar joe-macro-9 nil "Macro 9.")
+
 
 (make-variable-buffer-local 'joe-mark-0)
 (make-variable-buffer-local 'joe-mark-1)
@@ -105,10 +117,6 @@
            (widen)))
         ((search-forward str)))) ; default, search forward
 
-(defun joe-replace (str repl)
-  "Replace instances of STR with REPL."
-  ()) ; TODO
-
 (defun joe-shift-region (distance)
   "Shift the region DISTANCE number of whitespace."
   (let ((mark (mark)))
@@ -124,6 +132,20 @@
   "Joe filt helper func.  Run COM on shell."
   (interactive "sCommand to filter the region through: ")
   (shell-command-on-region (mark) (point) com (current-buffer) t))
+
+(defun joe-get-macro-from-char (name)
+  "Get the macro variable corresponding to NAME."
+  (cond ((= ?0 name) joe-macro-0)
+        ((= ?1 name) joe-macro-1)
+        ((= ?2 name) joe-macro-2)
+        ((= ?3 name) joe-macro-3)
+        ((= ?4 name) joe-macro-4)
+        ((= ?5 name) joe-macro-5)
+        ((= ?6 name) joe-macro-6)
+        ((= ?7 name) joe-macro-7)
+        ((= ?8 name) joe-macro-8)
+        ((= ?9 name) joe-macro-9)
+        (t nil)))
 
 ;; aliases
 (defalias 'joe-nbuf 'next-buffer)
@@ -168,8 +190,17 @@
 (defalias 'joe-edit 'find-file)
 (defalias 'joe-bufed 'list-buffers)
 
-
 ;; functions
+
+;; TODO does not work
+(defun joe-record (name)
+  "Record a keyboard macro and save it to NAME."
+  (interactive "cMacro to Record (0-9): ")
+  (let* ((macro (joe-get-macro-from-char name)))
+    (call-interactively 'start-kbd-macro)
+    (call-interactively 'kmacro-end-macro)
+    (call-interactively 'name-last-kbd-macro)
+    (call-interactively 'insert-kbd-macro)))
 
 (defun joe-byte (byte)
   "Go to byte BYTE."
