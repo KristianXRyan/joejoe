@@ -6,7 +6,7 @@
 ;;; Created: 2019-05-12
 ;;; Keywords: joe wordstar emulation editor
 ;;; Version: 0.5.1
-;;; Package-Requires: ((emacs "24.2") (undo-tree "0.8.5"))
+;;; Package-Requires: ((emacs "24.2") (undo-tree "0.8.5") (highlight))
 ;;; URL: https://github.com/Ma11ock/joestar
 
 ;;; License:
@@ -34,6 +34,8 @@
 ;;; Code:
 
 ;;; TODO: better relative line number support with goto-line
+
+(require 'highlight)
 
 
 ;; block variables
@@ -227,56 +229,17 @@
   "Face for joestar-blocks."
   :group 'joestar-mode)
 
-;; this one rearrange buffer faces in wormstar [and in font-lock-mode].
-(defun joe-refontify ()
-  "Rearrange faces."
-  (interactive)
-  (facemenu-add-face 'default (point-min) (point-max))
-;  (if (and (symbolp 'font-lock-mode) (null font-lock-mode))
-;      ()
-;    (font-lock-fontify-buffer))
-  (if joe-block-is
-      (progn
-	(facemenu-add-face 'blockface
-			   joe-block-mark-start joe-block-mark-end)
-	(setq joe-block-show t))))
-
-(defun joe-block-show-hide (&optional arg)
-  "Show/hide Block in blockface face."
-  (interactive "P")
-  (joe-block-test)
-  (cond ((null arg)
-	 (if joe-block-show
-	     (progn
-	       (facemenu-add-face 'default
-				  joe-block-mark-start joe-block-mark-end)
-	       (setq joe-block-show nil))
-	   (facemenu-add-face 'blockface
-			      joe-block-mark-start joe-block-mark-end)
-	   (setq joe-block-show t)))
-	((> (prefix-numeric-value arg) 0)
-	 (facemenu-add-face 'blockface
-			    joe-block-mark-start joe-block-mark-end)
-	 (setq joe-block-show t))
-	((< (prefix-numeric-value arg) 1)
-	 (facemenu-add-face 'default
-			    joe-block-mark-start joe-block-mark-end)
-	 (setq joe-block-show nil))))
-
-
 (defun joe-block-unset ()
   "Unset Block in current buffer."
   (interactive)
 ;; normal face
   (if (and joe-block-mark-start joe-block-mark-end)
-      (facemenu-add-face 'default joe-block-mark-start joe-block-mark-end))
+      (hlt-unhighlight-region joe-block-mark-start joe-block-mark-end 'highlight))
   (setq joe-block-mark-start nil
 	joe-block-mark-end nil
 	joe-block-is nil
 	joe-block-show nil)
-  (joe-refontify)
   (message "Block unset."))
-
 
 (defun joe-block-start (&optional arg)
   "Start of block. With arg redefine Start of Block."
@@ -297,9 +260,9 @@
 	    joe-stream (buffer-substring joe-block-mark-start joe-block-mark-end)
 	    joe-block-is t
 	    joe-block-show t)
+      
       ;; default Block is highlighted in blockface face
-      (facemenu-add-face 'blockface joe-block-mark-start joe-block-mark-end)
-      (message "Block defined. Copied in global register."))))
+      (hlt-highlight-region joe-block-mark-start joe-block-mark-end 'highlight))))
 
 (defun joe-block-end (&optional arg)
   "End of block. With arg redefine End of Block."
@@ -320,24 +283,21 @@
 	    joe-stream (buffer-substring joe-block-mark-start joe-block-mark-end)
 	    joe-block-is t
 	    joe-block-show t)
-      (facemenu-add-face 'blockface joe-block-mark-start joe-block-mark-end)
-      (message "Block defined. Copied in global register."))))
+      (hlt-highlight-region joe-block-mark-start joe-block-mark-end 'highlight))))
 
+; TODO get the block to remain after a move
 (defun joe-block-move ()
   "Move block to current cursor position."
   (interactive)
   (joe-block-test)
-  (if joe-block-show
-      (joe-block-show-hide 0))
   (push-mark joe-block-mark-start)
   (if joe-block-rect
       (progn
-	(kill-rectangle joe-block-mark-start joe-block-mark-end)
-	(yank-rectangle))
+        (kill-rectangle joe-block-mark-start joe-block-mark-end)
+        (yank-rectangle))
     (kill-region joe-block-mark-start joe-block-mark-end)
     (yank))
-;; Unset block: no problems!
-  (joe-block-unset))
+  (hlt-highlight-region joe-block-mark-start joe-block-mark-end 'highlight))
 
 
 ;; end
@@ -739,18 +699,22 @@
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map
   (let ((joe-map (make-sparse-keymap)))
-    ;; region
-    (define-key joe-map (kbd "<C-right>") 'joe-ctr-selection-right)
+    ;; block
+    (define-key joe-map (kbd "C-k C-b") 'joe-block-start)
+    (define-key joe-map (kbd "C-k b") (kbd "C-k C-b"))
+    (define-key joe-map (kbd "C-k C-k") 'joe-block-end)
+    (define-key joe-map (kbd "C-k k") (kbd "C-k C-k"))
+    (define-key joe-map (kbd "<C-right>") 'joe-ctr-selection-right) ; TODO change these from region to block
     (define-key joe-map (kbd "<C-left>") 'joe-ctr-selection-left)
     (define-key joe-map (kbd "<C-up>") 'joe-ctr-selection-up)
     (define-key joe-map (kbd "<C-down>") 'joe-ctr-selection-down)
-    (define-key joe-map (kbd "C-k C-y") 'delete-region)
+    (define-key joe-map (kbd "C-k C-y") 'delete-region) ; TODO
     (define-key joe-map (kbd "C-k y") (kbd "C-k C-y"))
-    (define-key joe-map (kbd "C-k C-m") 'joe-todo-func)
+    (define-key joe-map (kbd "C-k C-m") 'joe-block-move)
     (define-key joe-map (kbd "C-k m") (kbd "C-k C-m"))
-    (define-key joe-map (kbd "C-k C-c") 'copy-region-as-kill) ;; TODO test
+    (define-key joe-map (kbd "C-k C-c") 'copy-region-as-kill) ;; TODO
     (define-key joe-map (kbd "C-k c") (kbd "C-k C-c"))
-    (define-key joe-map (kbd "C-k C-/") 'joe-todo-func)
+    (define-key joe-map (kbd "C-k C-/") 'joe-todo-func) ; TODO
     (define-key joe-map (kbd "C-k /") (kbd "C-k C-/"))
     (define-key joe-map (kbd "C-k C-w") '(lambda (file-path)
                                            "Writes the region to FILE-PATH."
