@@ -1,7 +1,27 @@
-* Joestar
-Joestar is a minor mode for emacs that seeks to emulate [[https://github.com/jhallen/joe-editor][Joe's Own Editor]], a wordstar-like terminal text editor. 
+#+TITLE: Joestar
+#+AUTHOR: Ryan Jeffrey
+#+EMAIL: pwishie@gmail.com
+#+OPTIONS: num:nil
+
+Joestar is a minor mode for emacs that seeks to emulate [[https://github.com/jhallen/joe-editor][Joe's Own Editor]], a wordstar-like terminal text editor.
+* Installation
+Joestar needs the libraries [[https://www.emacswiki.org/emacs/HighlightLibrary][Highlight]] and [[https://github.com/apchamberlain/undo-tree.el][Undo Tree]]. Once you have those:
+#+BEGIN_SRC shell
+  cd ~/.emcas.d/
+  git clone https://github.com/Ma11ock/joestar
+#+END_SRC
+
+Then, in your emacs configuration file:
+
+#+BEGIN_SRC emacs-lisp
+  (add-to-list 'load-path "~/.emacs.d/joestar/")
+  (require 'joestar)
+;; you can hook joestar to prog-mode like:
+(add-hook 'prog-mode-hook 'joestar-mode)
+
+#+END_SRC
 * Configuration
-* Undo-tree
+** Undo-tree
 Joestar uses undo-tree to get a more accurate undoing experience to Joe.
 However, a few of undo-tree's default keybindings conflict with Joestar's.
 To fix this problem add this to your config /(before Joestar is loaded)/.
@@ -37,47 +57,9 @@ If you are using use-package this would be done with *:init*.
 The find feature is supposed to store the last task of the user and set it to the default next time find is called.
 This works the first time a find command is repeated, but not subsequent times.
 
-* Basic Tutorial
-For a more detailed tutorial, see tutorial.org; or *C-k C-h* in Emacs for help.
-** Control key sequences
-Because of the way that Joe works *C-k C-e* is the same as *C-k e*. 
-However, Emacs considers these to be different key sequences. 
-In joestar mode, just like in joe, these are the same sequence.
-** Keybindings
-Type *C-k h* for help.
-- *C-<arrow>*
-Control selection.
-- *C-k c*
-Copy region.
-- *C-k w*
-Write to file.
-- *C-k y*
-Delete region
-- *C-z*
-Back one word.
-- *C-x*
-Forward one word.
-- *C-k C-u*
-Top of file.
-- *C-k C-v*
-End of file.
-- *C-a*
-Beginning of line (first non-indentation character).
-- *C-e*
-End of line.
-- *C-k l*
-To line number.
-- *C-u*
-Up one screen.
-- *C-v*
-Down one screen.
-- *C-k C-d*
-Saving
-- *C-k C-f*
-Joe's find function.
-* TODO Goals for Major Version
-
+* TODO Goals for Beta Version [1/5]
 - [X] Find function
 - [ ] Keyboard Macro
 - [ ] Cancel features
 - [ ] Help buffer
+- [ ] Full Block implementation
