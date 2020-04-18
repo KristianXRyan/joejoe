@@ -16,8 +16,8 @@ Then, in your emacs configuration file:
 #+BEGIN_SRC emacs-lisp
   (add-to-list 'load-path "~/.emacs.d/joestar/")
   (require 'joestar)
-;; you can hook joestar to prog-mode like:
-(add-hook 'prog-mode-hook 'joestar-mode)
+  ;; you can hook joestar to prog-mode like:
+  (add-hook 'prog-mode-hook 'joestar-mode)
 
 #+END_SRC
 * Configuration

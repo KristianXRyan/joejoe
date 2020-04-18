@@ -299,8 +299,19 @@
     (yank))
   (hlt-highlight-region joe-block-mark-start joe-block-mark-end 'highlight))
 
+ ;; converts the block to region and then kills the region
+(defun joe-blkdel () ; TODO option to not save the block in kill ring
+  "Delete the block.
+Move mark to joestar's end of block and move point to joestar's end of block."
+  (interactive)
+  (let* ((cur-local (point-marker)))
+    (set-mark joe-block-mark-start)
+    (goto-char joe-block-mark-end)
+    (call-interactively 'kill-region)
+    (goto-char cur-local)))
 
 ;; end
+
 ;; TODO does not work
 (defun joe-record (name)
   "Record a keyboard macro and save it to NAME."
@@ -708,7 +719,7 @@
     (define-key joe-map (kbd "<C-left>") 'joe-ctr-selection-left)
     (define-key joe-map (kbd "<C-up>") 'joe-ctr-selection-up)
     (define-key joe-map (kbd "<C-down>") 'joe-ctr-selection-down)
-    (define-key joe-map (kbd "C-k C-y") 'delete-region) ; TODO
+    (define-key joe-map (kbd "C-k C-y") 'joe-blkdel)
     (define-key joe-map (kbd "C-k y") (kbd "C-k C-y"))
     (define-key joe-map (kbd "C-k C-m") 'joe-block-move)
     (define-key joe-map (kbd "C-k m") (kbd "C-k C-m"))
