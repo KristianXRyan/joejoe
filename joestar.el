@@ -49,6 +49,13 @@
 (defvar joe-stream           nil "Contains last defined Block.  Stream.")
 (defvar joe-rect             nil "Contains last defined Block.  Rectangle.")
 
+;; For converting the block to region.
+(defvar joe-last-emacs-mark  nil "The last position of mark.")
+(defvar joe-last-emacs-point nil "The last position of point.")
+
+(make-variable-buffer-local 'joe-last-emacs-mark)
+(make-variable-buffer-local 'joe-last-emacs-point)
+
 ;;; set mark variables
 (defvar joe-mark-0 nil "Mark 0.")
 (defvar joe-mark-1 nil "Mark 1.")
@@ -168,10 +175,22 @@
 	  ()
 	(message "Zero length Block..."))
     (if joe-block-mark-start
-	(error "End of Block not set.")
+	(error "End of Block not set")
       (if joe-block-mark-end
-	  (error "Start of Block not set.")
+	  (error "Start of Block not set")
       (error "No Block")))))
+
+(defun joe-block-to-region()
+  "Convert the joe-block into region."
+  (setq joe-last-emacs-mark (mark))
+  (setq joe-last-emacs-point (point-marker))
+  (set-mark joe-block-mark-start)
+  (goto-char joe-block-mark-end))
+
+(defun joe-restore-emacs-mark-and-point ()
+  "Return mark and point to their original values."
+  (goto-char joe-last-emacs-point)
+  (set-mark joe-last-emacs-mark))
 
 ;; aliases
 (defalias 'joe-nbuf 'next-buffer)
@@ -304,11 +323,14 @@
   "Delete the block.
 Move mark to joestar's end of block and move point to joestar's end of block."
   (interactive)
-  (let* ((cur-local (point-marker)))
-    (set-mark joe-block-mark-start)
-    (goto-char joe-block-mark-end)
-    (call-interactively 'kill-region)
-    (goto-char cur-local)))
+  (joe-block-to-region)
+  (call-interactively 'kill-region)
+  (joe-restore-emacs-mark-and-point))
+
+(defun joe-blkcpy()
+  "Copy the region into the kill ring." ; TODO optionally not into the kill ring
+  (interactive)
+  ())
 
 ;; end
 

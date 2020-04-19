@@ -3,7 +3,8 @@
 #+EMAIL: pwishie@gmail.com
 #+OPTIONS: num:nil
 
-Joestar is a minor mode for emacs that seeks to emulate [[https://github.com/jhallen/joe-editor][Joe's Own Editor]], a wordstar-like terminal text editor.
+Joestar is a minor mode for emacs that seeks to emulate [[https://github.com/jhallen/joe-editor][Joe's Own Editor]], a wordstar-like terminal text editor. It is a fork of the old [[https://github.com/dfr62/wormstar][Wormstar mode]].
+This project seeks to make a Wordstar mode for modern Emacs. 
 * Installation
 Joestar needs the libraries [[https://www.emacswiki.org/emacs/HighlightLibrary][Highlight]] and [[https://github.com/apchamberlain/undo-tree.el][Undo Tree]]. Once you have those:
 #+BEGIN_SRC shell
