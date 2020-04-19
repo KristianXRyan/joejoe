@@ -33,8 +33,6 @@
 
 ;;; Code:
 
-;;; TODO: better relative line number support with goto-line
-
 (require 'highlight)
 
 
@@ -52,6 +50,8 @@
 ;; For converting the block to region.
 (defvar joe-last-emacs-mark  nil "The last position of mark.")
 (defvar joe-last-emacs-point nil "The last position of point.")
+
+(defvar joe-ctrl-selection   nil "0 if not control-selecting, 1 if ctrl selecting.")
 
 (make-variable-buffer-local 'joe-last-emacs-mark)
 (make-variable-buffer-local 'joe-last-emacs-point)
@@ -181,6 +181,16 @@
   (set-mark joe-block-mark-start)
   (goto-char joe-block-mark-end))
 
+
+(defun joe-region-to-block ()
+  "Convert the Emacs region to a joestar block."
+  (interactive)
+  (let* ((call-local (point-marker)))
+    (joe-markb)
+    (goto-char (mark))
+    (joe-markk)
+    (goto-char call-local)))
+
 (defun joe-restore-emacs-mark-and-point ()
   "Return mark and point to their original values."
   (goto-char joe-last-emacs-point)
@@ -228,6 +238,8 @@
 (defalias 'joe-shrinkw 'shrink-window)
 (defalias 'joe-edit 'find-file)
 (defalias 'joe-bufed 'list-buffers)
+(defalias 'joe-splitw 'split-window-vertically)
+(defalias 'joe-splitwh 'split-window-horizontally)
 
 ;; functions
 
@@ -251,7 +263,8 @@
   (setq joe-block-mark-start nil
 	joe-block-mark-end nil
 	joe-block-is nil
-	joe-block-show nil)
+	joe-block-show nil
+    joe-ctrl-selection nil)
   (message "Block unset."))
 
 (defun joe-block-new-start ()
@@ -386,7 +399,7 @@ Move mark to joestar's end of block and move point to joestar's end of block."
   (write-region joe-block-mark-start joe-block-mark-end filepath))
 
 
-(defun joe-filt()
+(defun joe-filt ()
   "Filter the block through a shell command and replace the block with its output." ; TODO whole buffer if no block
   (interactive)
   ;; check if block, if not, make buffer block
@@ -394,6 +407,32 @@ Move mark to joestar's end of block and move point to joestar's end of block."
                             nil nil nil
                             'shell-command-history)))
     (shell-command-on-region joe-block-mark-start joe-block-mark-end string t t)))
+
+
+(defun joe-ctr-selection-right ()
+  "Control selection to right char."
+  (interactive)
+  (setq this-command-keys-shift-translated t)
+  (call-interactively 'forward-char))
+
+(defun joe-ctr-selection-left ()
+  "Control selection to left char."
+  (interactive)
+  (setq this-command-keys-shift-translated t)
+  (call-interactively 'backward-char))
+
+(defun joe-ctr-selection-up ()
+  "Control selection up one line."
+  (interactive)
+  (setq this-command-keys-shift-translated t)
+  (call-interactively 'previous-line))
+
+(defun joe-ctr-selection-down ()
+  "Control selection down one line."
+  (interactive)
+  (setq this-command-keys-shift-translated t)
+  (call-interactively 'next-line))
+
 
 ;; need to have the copied area as block
 
@@ -478,29 +517,6 @@ Move mark to joestar's end of block and move point to joestar's end of block."
   "TODO func."
   (interactive))
 
-(defun joe-ctr-selection-right ()
-  "Control selection to right char."
-  (interactive)
-  (setq this-command-keys-shift-translated t)
-  (call-interactively 'forward-char))
-
-(defun joe-ctr-selection-left ()
-  "Control selection to left char."
-  (interactive)
-  (setq this-command-keys-shift-translated t)
-  (call-interactively 'backward-char))
-
-(defun joe-ctr-selection-up ()
-  "Control selection up one line."
-  (interactive)
-  (setq this-command-keys-shift-translated t)
-  (call-interactively 'previous-line))
-
-(defun joe-ctr-selection-down ()
-  "Control selection down one line."
-  (interactive)
-  (setq this-command-keys-shift-translated t)
-  (call-interactively 'next-line))
 
 (defun joe-line (num)
   "Goto absolute line number NUM."
@@ -811,6 +827,7 @@ Move mark to joestar's end of block and move point to joestar's end of block."
     (define-key joe-map (kbd "C-k ,") (kbd "C-k C-,"))
     (define-key joe-map (kbd "C-k C-.") 'joe-rindent)
     (define-key joe-map (kbd "C-k .") (kbd "C-k C-."))
+    (define-key joe-map (kbd "C-.") 'joe-region-to-block) ; -- EXTRA
     
     ;; goto
     (define-key joe-map (kbd "C-z") 'joe-prevword)
@@ -900,8 +917,10 @@ Move mark to joestar's end of block and move point to joestar's end of block."
     (define-key joe-map (kbd "<escape> y") '(lambda () (interactive))) ; TODO
 
     ;; window
-    (define-key joe-map (kbd "C-k C-o") 'split-window-vertically)
+    (define-key joe-map (kbd "C-k C-o") 'joe-splitw)
     (define-key joe-map (kbd "C-k o") (kbd "C-k C-o"))
+    (define-key joe-map (kbd "C-k C-0") 'joe-splitwh)
+    (define-key joe-map (kbd "C-k 0") (kbd "C-k C-0"))
     (define-key joe-map (kbd "C-k C-g") 'joe-groww) ; TODO horizontal window support
     (define-key joe-map (kbd "C-k g") (kbd "C-k C-g"))
     (define-key joe-map (kbd "C-k C-t") 'joe-shrinkw)
