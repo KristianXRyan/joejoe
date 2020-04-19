@@ -349,25 +349,26 @@
   (joe-markk)
   (goto-char joe-last-emacs-point))
 
-; TODO get the block to remain after a move
-(defun joe-block-move ()
-  "Move block to current cursor position."
+(defun joe-blkmove ()
+  "Move the block to point."
   (interactive)
   (joe-block-test)
-  (push-mark joe-block-mark-start)
-  (if joe-block-rect
-      (progn
-        (kill-rectangle joe-block-mark-start joe-block-mark-end)
-        (yank-rectangle))
-    (kill-region joe-block-mark-start joe-block-mark-end)
-    (yank))
-  (hlt-highlight-region joe-block-mark-start joe-block-mark-end 'highlight))
+  (let* ((blk-len (- joe-block-mark-start joe-block-mark-end))
+         (pnt (point-marker)))
+    (joe-block-to-region)
+    (call-interactively 'kill-region)
+    (goto-char pnt)
+    (yank)
+    (joe-markk)
+    (goto-char (+ (point-marker) blk-len))
+    (joe-markb)))
 
  ;; converts the block to region and then kills the region
 (defun joe-blkdel () ; TODO option to not save the block in kill ring
   "Delete the block.
 Move mark to joestar's end of block and move point to joestar's end of block."
   (interactive)
+  (joe-block-test)
   (joe-block-to-region)
   (call-interactively 'kill-region)
   (joe-restore-emacs-mark-and-point))
@@ -375,6 +376,7 @@ Move mark to joestar's end of block and move point to joestar's end of block."
 (defun joe-blkcpy()
   "Copy the block at point." ; TODO optionally not into the kill ring
   (interactive)
+  (joe-block-test)
   (let* ((blk-len (- joe-block-mark-start joe-block-mark-end)))
     (joe-block-to-region)
     (call-interactively 'copy-region-as-kill)
@@ -802,21 +804,14 @@ Move mark to joestar's end of block and move point to joestar's end of block."
     (define-key joe-map (kbd "<C-down>") 'joe-ctr-selection-down)
     (define-key joe-map (kbd "C-k C-y") 'joe-blkdel)
     (define-key joe-map (kbd "C-k y") (kbd "C-k C-y"))
-    (define-key joe-map (kbd "C-k C-m") 'joe-block-move)
+    (define-key joe-map (kbd "C-k C-m") 'joe-blkmove)
     (define-key joe-map (kbd "C-k m") (kbd "C-k C-m"))
     (define-key joe-map (kbd "C-k C-c") 'joe-blkcpy)
     (define-key joe-map (kbd "C-k c") (kbd "C-k C-c"))
     (define-key joe-map (kbd "C-k C-/") 'joe-todo-func) ; TODO
     (define-key joe-map (kbd "C-k /") (kbd "C-k C-/"))
-    (define-key joe-map (kbd "C-k C-w") '(lambda (file-path)
-                                           "Writes the region to FILE-PATH."
-                                           (interactive "FName of file to write (C-k h for help): ")
-                                           (write-region (region-beginning) (region-end) file-path))) ; TODO contextual K-h keybind, and save if no block
-    ;; had to define the lambda twice because (kbd C-k C-w) wasn't working for some reason
-    (define-key joe-map (kbd "C-k w") '(lambda (file-path)
-                                           "Writes the region to FILE-PATH."
-                                           (interactive "FName of file to write (C-k h for help): ")
-                                           (write-region (region-beginning) (region-end) file-path)))
+    (define-key joe-map (kbd "C-k C-w") 'joe-blksave)
+    (define-key joe-map (kbd "C-k w") 'joe-blksave) ; had to put function twice, it bugs out if i use kbd
 
     (define-key joe-map (kbd "C-k C-,") 'joe-lindent)
     (define-key joe-map (kbd "C-k ,") (kbd "C-k C-,"))
