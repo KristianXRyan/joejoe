@@ -260,8 +260,43 @@
 	joe-block-show nil)
   (message "Block unset."))
 
+(defun joe-block-new-start ()
+  "Extend Block."
+;  (interactive)
+  (joe-block-test)
+  (if (= (point) (or joe-block-mark-start joe-block-mark-end))
+      (error "Same Block")
+    (if ( < (point) joe-block-mark-end)
+	(setq joe-block-mark-start (point-marker))
+      (setq joe-block-mark-start joe-block-mark-end
+	    joe-block-mark-end (point-marker)))
+    (setq joe-rect (extract-rectangle joe-block-mark-start joe-block-mark-end)
+	joe-stream (buffer-substring joe-block-mark-start joe-block-mark-end)
+	joe-block-is t)
+    (joe-refontify)
+    (message "Block redefined. Copied to global register.")))
+
+  
+(defun joe-block-new-end ()
+  "Extend Block."
+;  (interactive)
+  (joe-block-test)
+  (if (= (point) (or joe-block-mark-start joe-block-mark-end))
+      (error "Same Block")
+    (if ( > (point) joe-block-mark-start)
+	(setq joe-block-mark-end (point-marker))
+      (setq joe-block-mark-end joe-block-mark-start
+	    joe-block-mark-start (point-marker)))
+    (setq joe-rect (extract-rectangle joe-block-mark-start joe-block-mark-end)
+	joe-stream (buffer-substring joe-block-mark-start joe-block-mark-end)
+	joe-block-is t)
+    (joe-refontify)
+    (message "Block redefined. Copied to global register.")))
+
+
+
 (defun joe-block-start (&optional arg)
-  "Start of block. With arg redefine Start of Block."
+  "Start of block.  With ARG redefine Start of Block."
   (interactive "P")
   (if arg
       (joe-block-new-start)
@@ -284,7 +319,7 @@
       (hlt-highlight-region joe-block-mark-start joe-block-mark-end 'highlight))))
 
 (defun joe-block-end (&optional arg)
-  "End of block. With arg redefine End of Block."
+  "End of block.  With ARG redefine End of Block."
   (interactive "P")
   (if arg
       (joe-block-new-end) ; unset of prev block
@@ -328,9 +363,18 @@ Move mark to joestar's end of block and move point to joestar's end of block."
   (joe-restore-emacs-mark-and-point))
 
 (defun joe-blkcpy()
-  "Copy the region into the kill ring." ; TODO optionally not into the kill ring
+  "Copy the block at point." ; TODO optionally not into the kill ring
   (interactive)
-  ())
+  (let* ((blk-len (- joe-block-mark-start joe-block-mark-end)))
+    (joe-block-to-region)
+    (call-interactively 'copy-region-as-kill)
+    (joe-restore-emacs-mark-and-point)
+    (yank)
+    (joe-block-end)
+    (goto-char (+ (point-marker) blk-len))
+    (joe-block-start)))
+
+;; need to have the copied area as block
 
 ;; end
 
