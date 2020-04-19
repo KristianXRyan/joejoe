@@ -295,7 +295,7 @@
 
 
 
-(defun joe-block-start (&optional arg)
+(defun joe-markb (&optional arg)
   "Start of block.  With ARG redefine Start of Block."
   (interactive "P")
   (if arg
@@ -318,7 +318,7 @@
       ;; default Block is highlighted in blockface face
       (hlt-highlight-region joe-block-mark-start joe-block-mark-end 'highlight))))
 
-(defun joe-block-end (&optional arg)
+(defun joe-markk (&optional arg)
   "End of block.  With ARG redefine End of Block."
   (interactive "P")
   (if arg
@@ -338,6 +338,16 @@
 	    joe-block-is t
 	    joe-block-show t)
       (hlt-highlight-region joe-block-mark-start joe-block-mark-end 'highlight))))
+
+(defun joe-markl ()
+  "Mark the current line as a block."
+  (interactive)
+  (setq joe-last-emacs-point (point-marker))
+  (joe-bol)
+  (joe-markb)
+  (joe-eol)
+  (joe-markk)
+  (goto-char joe-last-emacs-point))
 
 ; TODO get the block to remain after a move
 (defun joe-block-move ()
@@ -370,9 +380,14 @@ Move mark to joestar's end of block and move point to joestar's end of block."
     (call-interactively 'copy-region-as-kill)
     (joe-restore-emacs-mark-and-point)
     (yank)
-    (joe-block-end)
+    (joe-markk)
     (goto-char (+ (point-marker) blk-len))
-    (joe-block-start)))
+    (joe-markb)))
+
+(defun joe-blksave (filepath)
+  "Save the block to a text file FILEPATH.  If no block, save the whole buffer."
+  (interactive "FName of file to write: ")
+  (write-region joe-block-mark-start joe-block-mark-end filepath))
 
 ;; need to have the copied area as block
 
@@ -777,9 +792,9 @@ Move mark to joestar's end of block and move point to joestar's end of block."
 (defvar  joestar-mode-map
   (let ((joe-map (make-sparse-keymap)))
     ;; block
-    (define-key joe-map (kbd "C-k C-b") 'joe-block-start)
+    (define-key joe-map (kbd "C-k C-b") 'joe-markb)
     (define-key joe-map (kbd "C-k b") (kbd "C-k C-b"))
-    (define-key joe-map (kbd "C-k C-k") 'joe-block-end)
+    (define-key joe-map (kbd "C-k C-k") 'joe-markk)
     (define-key joe-map (kbd "C-k k") (kbd "C-k C-k"))
     (define-key joe-map (kbd "<C-right>") 'joe-ctr-selection-right) ; TODO change these from region to block
     (define-key joe-map (kbd "<C-left>") 'joe-ctr-selection-left)
@@ -789,7 +804,7 @@ Move mark to joestar's end of block and move point to joestar's end of block."
     (define-key joe-map (kbd "C-k y") (kbd "C-k C-y"))
     (define-key joe-map (kbd "C-k C-m") 'joe-block-move)
     (define-key joe-map (kbd "C-k m") (kbd "C-k C-m"))
-    (define-key joe-map (kbd "C-k C-c") 'copy-region-as-kill) ;; TODO
+    (define-key joe-map (kbd "C-k C-c") 'joe-blkcpy)
     (define-key joe-map (kbd "C-k c") (kbd "C-k C-c"))
     (define-key joe-map (kbd "C-k C-/") 'joe-todo-func) ; TODO
     (define-key joe-map (kbd "C-k /") (kbd "C-k C-/"))
