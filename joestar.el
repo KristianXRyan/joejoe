@@ -148,12 +148,6 @@
       ;; for transient mark mode
       (setq deactivate-mark nil))))
 
-;; This exists so that joe-filt can mark the entire buffer beforehand if necessary, just like JOE.
-(defun joe-filter-command (com)
-  "Joe filt helper func.  Run COM on shell."
-  (interactive "sCommand to filter the region through: ")
-  (shell-command-on-region (mark) (point) com (current-buffer) t))
-
 (defun joe-get-macro-from-char (name)
   "Get the macro variable corresponding to NAME."
   (cond ((= ?0 name) joe-macro-0)
@@ -390,6 +384,16 @@ Move mark to joestar's end of block and move point to joestar's end of block."
   "Save the block to a text file FILEPATH.  If no block, save the whole buffer."
   (interactive "FName of file to write: ")
   (write-region joe-block-mark-start joe-block-mark-end filepath))
+
+
+(defun joe-filt()
+  "Filter the block through a shell command and replace the block with its output." ; TODO whole buffer if no block
+  (interactive)
+  ;; check if block, if not, make buffer block
+  (let* ((string  (read-from-minibuffer "Command to filter block through: "
+                            nil nil nil
+                            'shell-command-history)))
+    (shell-command-on-region joe-block-mark-start joe-block-mark-end string t t)))
 
 ;; need to have the copied area as block
 
@@ -776,15 +780,6 @@ Move mark to joestar's end of block and move point to joestar's end of block."
   (interactive)
   (message "%s Col %d %d(0x%x) %s" (what-line) (current-column) (buffer-size) (buffer-size) buffer-file-coding-system))
 
-(defun joe-filt ()
-  "Filter region through shell command."
-  (interactive)
-  (if (use-region-p)
-      (call-interactively 'joe-filter-command)
-    (progn
-      (call-interactively 'mark-whole-buffer)
-      (call-interactively 'joe-filter-command))))
-
 (defun joe-delbol ()
   "Delete to the beginning of the line."
   (interactive)
@@ -808,17 +803,14 @@ Move mark to joestar's end of block and move point to joestar's end of block."
     (define-key joe-map (kbd "C-k m") (kbd "C-k C-m"))
     (define-key joe-map (kbd "C-k C-c") 'joe-blkcpy)
     (define-key joe-map (kbd "C-k c") (kbd "C-k C-c"))
-    (define-key joe-map (kbd "C-k C-/") 'joe-todo-func) ; TODO
+    (define-key joe-map (kbd "C-k C-/") 'joe-todo-func)
     (define-key joe-map (kbd "C-k /") (kbd "C-k C-/"))
     (define-key joe-map (kbd "C-k C-w") 'joe-blksave)
     (define-key joe-map (kbd "C-k w") 'joe-blksave) ; had to put function twice, it bugs out if i use kbd
-
     (define-key joe-map (kbd "C-k C-,") 'joe-lindent)
     (define-key joe-map (kbd "C-k ,") (kbd "C-k C-,"))
     (define-key joe-map (kbd "C-k C-.") 'joe-rindent)
     (define-key joe-map (kbd "C-k .") (kbd "C-k C-."))
-    
-
     
     ;; goto
     (define-key joe-map (kbd "C-z") 'joe-prevword)
