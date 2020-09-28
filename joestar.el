@@ -801,9 +801,25 @@ Move mark to joestar's end of block and move point to joestar's end of block."
   (interactive)
   (kill-line 0))
 
+
+;;
+;;
+;;                     KEYBINDINGS
+;;
+;;
+
+;(local-unset-key "\C-g")
+;(local-unset-key "\C-c")
+;(local-unset-key "\C-x")
+
+(define-key mode-specific-map (kbd ""))
+
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map
   (let ((joe-map (make-sparse-keymap)))
+    ;; unset emacs keys
+    ;(define-key joe-map (kbd "C-g") #'backward-list)
+    ;(define-key joe-map (kbd "C-c") #'keyboard-escape-quit)
     ;; block
     (define-key joe-map (kbd "C-k C-b") 'joe-markb)
     (define-key joe-map (kbd "C-k b") (kbd "C-k C-b"))
