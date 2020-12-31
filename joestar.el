@@ -57,24 +57,24 @@
 (make-variable-buffer-local 'joe-last-emacs-point)
 
 ;;; set mark variables
-(defvar joe-mark-0 nil "Mark 0.")
-(defvar joe-mark-1 nil "Mark 1.")
-(defvar joe-mark-2 nil "Mark 2.")
-(defvar joe-mark-3 nil "Mark 3.")
-(defvar joe-mark-4 nil "Mark 4.")
-(defvar joe-mark-5 nil "Mark 5.")
-(defvar joe-mark-6 nil "Mark 6.")
-(defvar joe-mark-7 nil "Mark 7.")
-(defvar joe-mark-8 nil "Mark 8.")
-(defvar joe-mark-9 nil "Mark 9.")
+(defvar-local joe-mark-0 nil "Mark 0.")
+(defvar-local joe-mark-1 nil "Mark 1.")
+(defvar-local joe-mark-2 nil "Mark 2.")
+(defvar-local joe-mark-3 nil "Mark 3.")
+(defvar-local joe-mark-4 nil "Mark 4.")
+(defvar-local joe-mark-5 nil "Mark 5.")
+(defvar-local joe-mark-6 nil "Mark 6.")
+(defvar-local joe-mark-7 nil "Mark 7.")
+(defvar-local joe-mark-8 nil "Mark 8.")
+(defvar-local joe-mark-9 nil "Mark 9.")
 
-(defvar joe-lastmark nil "The last mark id.")
-(defvar joe-nextmark nil "The next mark id.")
+(defvar-local joe-lastmark nil "The last mark id.")
+(defvar-local joe-nextmark nil "The next mark id.")
 
-(defvar joe-marklist nil "List of the currently used marks.")
+(defvar-local joe-marklist nil "List of the currently used marks.")
 
-(defvar joe-prev-search nil "The last searched-for item.")
-(defvar joe-prev-search-action nil "The last search action.")
+(defvar-local joe-prev-search nil "The last searched-for item.")
+(defvar-local joe-prev-search-action nil "The last search action.")
 
 (defvar joe-macro-0 nil "Macro 0.")
 (defvar joe-macro-1 nil "Macro 1.")
@@ -87,36 +87,20 @@
 (defvar joe-macro-8 nil "Macro 8.")
 (defvar joe-macro-9 nil "Macro 9.")
 
-
-(make-variable-buffer-local 'joe-mark-0)
-(make-variable-buffer-local 'joe-mark-1)
-(make-variable-buffer-local 'joe-mark-2)
-(make-variable-buffer-local 'joe-mark-3)
-(make-variable-buffer-local 'joe-mark-4)
-(make-variable-buffer-local 'joe-mark-5)
-(make-variable-buffer-local 'joe-mark-6)
-(make-variable-buffer-local 'joe-mark-7)
-(make-variable-buffer-local 'joe-mark-8)
-(make-variable-buffer-local 'joe-mark-9)
-
-(make-variable-buffer-local 'joe-lastmark)
-(make-variable-buffer-local 'joe-nextmark)
-
-(make-variable-buffer-local 'joe-prev-search)
-(make-variable-buffer-local 'joe-prev-search-action)
-
 ;; non-interactive helper functions
 ;; these functions exist to break-up functionality and do not necessarily
 ;; correspond to any function in Joe.
 
 ; TODO fix bug where it does not keep the value of joe-prev-search beyond one repitition
-(defun joe-get-findstr (prompt)
-  "If PROMPT is t ask user for search words.  If PROMPT is nil return joe-prev-search."
-  (setq joe-prev-search   (if (null joe-prev-search)
-                              (read-string "Find: ")
-                            (if prompt
-                                (read-string (format "Find [%s]: " joe-prev-search))
-                              joe-prev-search))))
+(defun joe-get-findstr ()
+  "Ask user for search words."
+  (setq joe-prev-search (if (null joe-prev-search)
+                            (read-string "Find: ")
+                          (read-string (format "Find [%s]: " joe-prev-search)))))
+
+(defun joe-replace (str1 str2)
+  "Replace STR1 with STR2."
+  ())
 
 (defun joe-get-find-action (prompt)
   "If PROMPT as the user for an action.  Otherwise, return previous action."
@@ -777,18 +761,18 @@ Move mark to joestar's end of block and move point to joestar's end of block."
 
 (defun joe-qrepl (str)
   "Search and replace STR."
-  (interactive (list (joe-get-findstr t)))
+  (interactive (list (joe-get-findstr)))
   (joe-find-do joe-prev-search-action str))
 
 (defun joe-fnext (str action)
   "Repeat previous search on STR and perform previous ACTION."
-  (interactive (list (joe-get-findstr nil) (joe-get-find-action nil)))
+  (interactive (list joe-prev-search (joe-get-find-action nil)))
   (joe-find-do action str))
 
 ; TODO does not replace yet
 (defun joe-ffirst (str action)
   "Find next STR, perform ACTION."
-  (interactive (list (joe-get-findstr t) (joe-get-find-action t)))
+  (interactive (list (joe-get-findstr) (joe-get-find-action t)))
   (joe-find-do action str))
 
 (defun joe-stat ()
