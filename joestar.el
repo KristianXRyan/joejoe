@@ -91,12 +91,14 @@
 ;; these functions exist to break-up functionality and do not necessarily
 ;; correspond to any function in Joe.
 
-; TODO fix bug where it does not keep the value of joe-prev-search beyond one repitition
 (defun joe-get-findstr ()
   "Ask user for search words."
   (setq joe-prev-search (if (null joe-prev-search)
                             (read-string "Find: ")
-                          (read-string (format "Find [%s]: " joe-prev-search)))))
+                          (let ((new-search (read-string (format "Find [%s]: " joe-prev-search))))
+                            (if (or (null new-search) (string= new-search ""))
+                                joe-prev-search
+                              new-search)))))
 
 (defun joe-replace (str1 str2)
   "Replace STR1 with STR2."
