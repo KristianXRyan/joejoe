@@ -100,20 +100,51 @@
                                 joe-prev-search
                               new-search)))))
 
-(defun joe-replace (str1 str2)
-  "Replace STR1 with STR2."
-  ())
+(defun joe-replace (str2 str1 pos &optional noask)
+  "Prompt user, replace STR1 with STR2 at POS.
+If NOASK is set just replace string without asking the user."
+  (when str1
+    (hlt-highlight-region (- (point) (length str1)) (point) 'highlight)
+    (let* ((reg-min (- (point) (length str1)))
+           (result (if noask
+                       ?Y
+                     (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))))
+           (unhl (lambda ()
+                   (hlt-unhighlight-region reg-min (point) 'highlight))))
+      (cond ((= result ?Y) (progn
+                             (funcall unhl)
+                             (kill-region (point) reg-min)
+                             (insert str2)
+                             (joe-replace str2 str1 (search-forward str1) noask)))
+            ((= result ?N) (progn
+                             (funcall unhl)
+                             (joe-replace str2 str1 (search-forward str1) noask)))
+            ((= result ?B) (progn
+                             (funcall unhl)
+                             (joe-replace str2 str1 (progn
+                                                      (search-backward str1)
+                                                      (search-backward str1)
+                                                      (search-forward str1)) noask))) ; TODO bad code
+            ((= result ?R) (progn
+                             (funcall unhl)
+                             (joe-replace str2 str1 (search-forward str1) t)))
+            (t (message (format "%c" result))
+               (funcall unhl))))))
+
 
 (defun joe-get-find-action (prompt)
   "If PROMPT as the user for an action.  Otherwise, return previous action."
   (setq joe-prev-search-action (if (or prompt (null joe-prev-search))
-                                   (read-string "(I)gnore (R)eplace (B)ackwards Bloc(K): ")
+                                   (read-string
+                                    "(I)gnore (R)eplace (B)ackwards Bloc(K): ")
                                  joe-prev-search)))
 
 (defun joe-find-do (action str)
   "Perform find ACTION on STR."
   (cond ((string= action "R") ; replace
-         (joe-replace str (read-string "Replace with: ")))
+         (joe-replace (read-string "Replace with: ")
+                      str
+                      (search-forward str)))
         ((string= action "B") ; search backward
          (search-backward str))
         ((string= action "K") ; search block
