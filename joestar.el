@@ -110,27 +110,32 @@ If BACK is t then move backwards, if nil then forwards."
     (let ((reg-min (- (point) (length str1)))
           (result (if noask
                       ?Y
-                    (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?")))))
+                    (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))))
+          (next-call (if back
+                         (lambda ()
+                           (search-backward str1)
+                           (search-forward str1))
+                       (lambda ()
+                         (search-forward str1)))))
       
       (cond ((= result ?Y) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
                              (kill-region (point) reg-min)
                              (insert str2)
-                             (joe-replace str2 str1 (search-forward str1) noask back t)))
+                             (joe-replace str2 str1 (funcall next-call) noask back t)))
             ((= result ?N) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
-                             (joe-replace str2 str1 (search-forward str1) noask back had-edit)))
+                             (joe-replace str2 str1 (funcall next-call) noask back had-edit)))
             ((= result ?B) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
                              (when had-edit
                                (undo-tree-undo))
-                             (joe-replace str2 str1 (progn
-                                                      (search-backward str1)
-                                                      (search-forward str1))
+                             (joe-replace str2 str1
+                                          (funcall next-call)
                                           noask back had-edit)))
             ((= result ?R) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
-                             (joe-replace str2 str1 (search-forward str1) t back had-edit)))
+                             (joe-replace str2 str1 (funcall next-call) t back had-edit)))
             (t (message (format "%c" result))
                (hlt-unhighlight-region reg-min (point) 'highlight))))))
 
