@@ -100,60 +100,72 @@
                                 joe-prev-search
                               new-search)))))
 
-(defun joe-replace (str2 str1 pos &optional noask)
+; TODO fix bug where unto-tree undoes too many things.
+(defun joe-replace (str2 str1 pos &optional noask back had-edit)
   "Prompt user, replace STR1 with STR2 at POS.
-If NOASK is set just replace string without asking the user."
+If NOASK is set just replace string without asking the user.
+If BACK is t then move backwards, if nil then forwards."
   (when str1
     (hlt-highlight-region (- (point) (length str1)) (point) 'highlight)
-    (let* ((reg-min (- (point) (length str1)))
-           (result (if noask
-                       ?Y
-                     (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))))
-           (unhl (lambda ()
-                   (hlt-unhighlight-region reg-min (point) 'highlight))))
+    (let ((reg-min (- (point) (length str1)))
+          (result (if noask
+                      ?Y
+                    (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?")))))
+      
       (cond ((= result ?Y) (progn
-                             (funcall unhl)
+                             (hlt-unhighlight-region reg-min (point) 'highlight)
                              (kill-region (point) reg-min)
                              (insert str2)
-                             (joe-replace str2 str1 (search-forward str1) noask)))
+                             (joe-replace str2 str1 (search-forward str1) noask back t)))
             ((= result ?N) (progn
-                             (funcall unhl)
-                             (joe-replace str2 str1 (search-forward str1) noask)))
+                             (hlt-unhighlight-region reg-min (point) 'highlight)
+                             (joe-replace str2 str1 (search-forward str1) noask back had-edit)))
             ((= result ?B) (progn
-                             (funcall unhl)
+                             (hlt-unhighlight-region reg-min (point) 'highlight)
+                             (when had-edit
+                               (undo-tree-undo))
                              (joe-replace str2 str1 (progn
                                                       (search-backward str1)
-                                                      (search-backward str1)
-                                                      (search-forward str1)) noask))) ; TODO bad code
+                                                      (search-forward str1))
+                                          noask back had-edit)))
             ((= result ?R) (progn
-                             (funcall unhl)
-                             (joe-replace str2 str1 (search-forward str1) t)))
+                             (hlt-unhighlight-region reg-min (point) 'highlight)
+                             (joe-replace str2 str1 (search-forward str1) t back had-edit)))
             (t (message (format "%c" result))
-               (funcall unhl))))))
+               (hlt-unhighlight-region reg-min (point) 'highlight))))))
 
 
 (defun joe-get-find-action (prompt)
   "If PROMPT as the user for an action.  Otherwise, return previous action."
   (setq joe-prev-search-action (if (or prompt (null joe-prev-search))
-                                   (read-string
-                                    "(I)gnore (R)eplace (B)ackwards Bloc(K): ")
+                                   (upcase
+                                    (read-string
+                                     "(I)gnore (R)eplace (B)ackwards Bloc(K): "))
                                  joe-prev-search)))
 
 (defun joe-find-do (action str)
   "Perform find ACTION on STR."
-  (cond ((string= action "R") ; replace
-         (joe-replace (read-string "Replace with: ")
-                      str
-                      (search-forward str)))
-        ((string= action "B") ; search backward
+  (cond ((string-match-p "R" action) ; replace
+         (if (string-match-p "B" action)
+             (joe-replace (read-string "Replace with: ")
+                          str
+                          (progn
+                            (search-backward str)
+                            (search-forward str))
+                          nil
+                          t)
+           (joe-replace (read-string "Replace with: ")
+                        str
+                        (search-forward str))))
+         ((string= action "B") ; search backward
          (search-backward str))
-        ((string= action "K") ; search block
+        ((string= action "K") ; search block TODO
          (progn
            (call-interactively 'narrow-to-region)
            (goto-char (point-min))
            (search-forward str)
            (widen)))
-        ((search-forward str)))) ; default, search forward
+        (t (search-forward str)))) ; default, search forward
 
 (defun joe-shift-region (distance)
   "Shift the region DISTANCE number of whitespace."
