@@ -100,7 +100,7 @@
                                 joe-prev-search
                               new-search)))))
 
-; TODO fix bug where unto-tree undoes too many things.
+;;TODO fix minor bug where "backing" to the last entry takes the point too far.
 (defun joe-replace (str2 str1 pos &optional noask back prev-edits)
   "Prompt user, replace STR1 with STR2 at POS.
 If NOASK is set just replace string without asking the user.
@@ -112,6 +112,7 @@ PREV-EDITS is a list of where previous edits occurred."
           (result (if noask
                       ?Y
                     (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))))
+          (point-at-begin (+ (point) (length str1)))
           (next-call (if back
                          (lambda ()
                            (search-backward str1)
@@ -123,37 +124,37 @@ PREV-EDITS is a list of where previous edits occurred."
                              (hlt-unhighlight-region reg-min (point) 'highlight)
                              (kill-region (point) reg-min)
                              (insert str2)
-                             (joe-replace str2 str1 (funcall next-call) noask back (cons (point) prev-edits))))
+                             (joe-replace str2 str1 (funcall next-call) noask back (cons point-at-begin prev-edits))))
+            
             ((= result ?N) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
-                             (joe-replace str2 str1 (funcall next-call) noask back prev-edits)))
+                             (joe-replace str2 str1 (funcall next-call) noask back (cons nil prev-edits))))
+            
             ((= result ?B) ;; Undo the previous edits.
              (let ((last-edit (if (car prev-edits)
                                   (car prev-edits)
                                 (if back
-                                    (point-min)
-                                  (point-max)))))
+                                    (point-max)
+                                  (point-min)))))
                (hlt-unhighlight-region reg-min (point) 'highlight)
-               (if (not back)
+               (if back
                    (progn
-                     (search-backward str1)
-                     (search-backward str1)
-                     (when (< last-edit (point))
-                       ;; Need to undo the last edit.
+                     (if (< last-edit (point))
+                         nil
+                       nil))
+                 (goto-char (- (point) (length str2)))
+                 (search-backward str1)
+                 (if (> last-edit (point))
+                     (progn
                        (goto-char last-edit)
-                       (kill-region (point) (+ (point) (length str2)))))
-                 (search-forward str1)
-                 (when (> last-edit (point)
-                          ;; Need to undo the last edit.
-                          (goto-char last-edit)
-                          (kill-region (point) (- (point) (length str2))))))
-               (joe-replace str2 str1
-                            (funcall next-call)
-                            noask back (cdr prev-edits))))
+                       (kill-region (point) (- (point) (length str2)))
+                       (insert str1))
+                   (goto-char (+ (point) (length str1)))))
+               (joe-replace str2 str1 (point) noask back (cdr prev-edits))))
             
             ((= result ?R) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
-                             (joe-replace str2 str1 (funcall next-call) t back prev-edits)))
+                             (joe-replace str2 str1 (point) t back prev-edits)))
             (t (message (format "%c" result))
                (hlt-unhighlight-region reg-min (point) 'highlight))))))
 
@@ -853,25 +854,9 @@ Move mark to joestar's end of block and move point to joestar's end of block."
   (interactive)
   (kill-line 0))
 
-
-;;
-;;
-;;                     KEYBINDINGS
-;;
-;;
-
-;(local-unset-key "\C-g")
-;(local-unset-key "\C-c")
-;(local-unset-key "\C-x")
-
-(define-key mode-specific-map (kbd ""))
-
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map
   (let ((joe-map (make-sparse-keymap)))
-    ;; unset emacs keys
-    ;(define-key joe-map (kbd "C-g") #'backward-list)
-    ;(define-key joe-map (kbd "C-c") #'keyboard-escape-quit)
     ;; block
     (define-key joe-map (kbd "C-k C-b") 'joe-markb)
     (define-key joe-map (kbd "C-k b") (kbd "C-k C-b"))
