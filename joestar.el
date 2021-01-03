@@ -112,7 +112,6 @@ PREV-EDITS is a list of where previous edits occurred."
           (result (if noask
                       ?Y
                     (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))))
-          (point-at-begin (+ (point) (length str1)))
           (next-call (if back
                          (lambda ()
                            (search-backward str1)
@@ -124,32 +123,33 @@ PREV-EDITS is a list of where previous edits occurred."
                              (hlt-unhighlight-region reg-min (point) 'highlight)
                              (kill-region (point) reg-min)
                              (insert str2)
-                             (joe-replace str2 str1 (funcall next-call) noask back (cons point-at-begin prev-edits))))
-            
+                             (joe-replace str2 str1 (funcall next-call) noask back (cons (point) prev-edits))))
             ((= result ?N) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
-                             (joe-replace str2 str1 (funcall next-call) noask back (cons nil prev-edits))))
-            
+                             (joe-replace str2 str1 (funcall next-call) noask back prev-edits)))
             ((= result ?B) ;; Undo the previous edits.
              (let ((last-edit (if (car prev-edits)
                                   (car prev-edits)
                                 (if back
-                                    (point-max)
-                                  (point-min)))))
+                                    (point-min)
+                                  (point-max)))))
                (hlt-unhighlight-region reg-min (point) 'highlight)
-               (if back
-                   (if (< last-edit (point))
-                       nil
-                     nil)
-                 (goto-char (- (point) (length str1)))
-                 (search-backward str1)
-                 (if (> last-edit (point))
-                     (progn
+               (if (not back)
+                   (progn
+                     (search-backward str1)
+                     (search-backward str1)
+                     (when (< last-edit (point))
+                       ;; Need to undo the last edit.
                        (goto-char last-edit)
-                       (kill-region (point) (- (point) (length str2)))
-                       (insert str1))
-                   (goto-char (+ (point) (length str1)))))
-               (joe-replace str2 str1 (point) noask back (cdr prev-edits))))
+                       (kill-region (point) (+ (point) (length str2)))))
+                 (search-forward str1)
+                 (when (> last-edit (point)
+                          ;; Need to undo the last edit.
+                          (goto-char last-edit)
+                          (kill-region (point) (- (point) (length str2))))))
+               (joe-replace str2 str1
+                            (funcall next-call)
+                            noask back (cdr prev-edits))))
             
             ((= result ?R) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
