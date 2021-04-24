@@ -34,6 +34,7 @@
 ;;; Code:
 
 (require 'highlight)
+(require 'cl-lib)
 
 
 ;; block variables
@@ -100,6 +101,11 @@
                                 joe-prev-search
                               new-search)))))
 
+;; Buffer location for the below joe-replace code.
+(cl-defstruct (buf-location (:constructor buf-location-create)
+                           (:copier nil))
+  position direction str)
+
 ;;TODO fix minor bug where "backing" to the last entry takes the point too far.
 (defun joe-replace (str2 str1 pos &optional noask back prev-edits)
   "Prompt user, replace STR1 with STR2 at POS.
@@ -108,29 +114,31 @@ If BACK is t then move backwards, if nil then forwards.
 PREV-EDITS is a list of where previous edits occurred."
   (when str1
     (hlt-highlight-region (- (point) (length str1)) (point) 'highlight)
-    (let ((reg-min (- (point) (length str1)))
-          (result (if noask
-                      ?Y
-                    (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))))
-          (point-at-begin (+ (point) (length str1)))
-          (next-call (if back
-                         (lambda ()
-                           (search-backward str1)
-                           (search-forward str1))
-                       (lambda ()
-                         (search-forward str1)))))
+    (let* ((reg-min (- (point) (length str1)))
+           (result (if noask
+                       ?Y
+                     (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))))
+           (point-at-begin (+ (point) (length str1)))
+           (next-call (if back
+                          (lambda ()
+                            (search-backward str1)
+                            (search-forward str1))
+                        (lambda ()
+                          (search-forward str1))))
+           (cur-point (point)))
       
       (cond ((= result ?Y) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
                              (kill-region (point) reg-min)
                              (insert str2)
-                             (joe-replace str2 str1 (funcall next-call) noask back (cons point-at-begin prev-edits))))
+                             (joe-replace str2 str1 (funcall next-call)
+                                          noask back (cons (buf-location-create :position cur-point) prev-edits))))
             
             ((= result ?N) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
-                             (joe-replace str2 str1 (funcall next-call) noask back (cons nil prev-edits))))
-            
-            ((= result ?B) ;; Undo the previous edits.
+                             (joe-replace str2 str1 (funcall next-call) noask back prev-edits)))
+            ;; Undo the previous edits.
+            ((= result ?B) 
              (let ((last-edit (if (car prev-edits)
                                   (car prev-edits)
                                 (if back
@@ -138,10 +146,9 @@ PREV-EDITS is a list of where previous edits occurred."
                                   (point-min)))))
                (hlt-unhighlight-region reg-min (point) 'highlight)
                (if back
-                   (progn
-                     (if (< last-edit (point))
-                         nil
-                       nil))
+                   (if (< last-edit (point))
+                       nil
+                     nil)
                  (goto-char (- (point) (length str2)))
                  (search-backward str1)
                  (if (> last-edit (point))
@@ -154,7 +161,7 @@ PREV-EDITS is a list of where previous edits occurred."
             
             ((= result ?R) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
-                             (joe-replace str2 str1 (point) t back prev-edits)))
+                             (replace-string str1 str2)))
             (t (message (format "%c" result))
                (hlt-unhighlight-region reg-min (point) 'highlight))))))
 
