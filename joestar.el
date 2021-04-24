@@ -74,8 +74,22 @@
 
 (defvar-local joe-marklist nil "List of the currently used marks.")
 
-(defvar-local joe-prev-search nil "The last searched-for item.")
-(defvar-local joe-prev-search-action nil "The last search action.")
+;; Search and query options.
+(cl-defstruct (search-obj (:constructor search-obj-create)
+                          (:copier nil))
+  (str-q "" :documentation "Query string." :type string)
+  (str-r "" :documentation "Replace string." :type string)
+  (direction :forward :documentation "The direction of the search and replace." :type symbol)
+  (a nil :documentation "If the query should include all files." :type symbol)
+  (e nil :documentation "Search includes make error or grep buffers." :type symbol)
+  (icase nil :documentation "If the search should ignore case." :type symbol)
+  (replace nil :documentation "If the search is for replacing strings." :type symbol)
+  (nnn -1 :documentation "Specified line number of query." :type number))
+
+
+
+(defvar joe-prev-search (search-obj-create) "The last searched-for item.")
+(defvar joe-prev-search-action nil "The last search action.")
 
 (defvar joe-macro-0 nil "Macro 0.")
 (defvar joe-macro-1 nil "Macro 1.")
@@ -94,11 +108,11 @@
 
 (defun joe-get-findstr ()
   "Ask user for search words."
-  (setq joe-prev-search (if (null joe-prev-search)
+  (setq joe-prev-search (if (or (null joe-prev-search) (string= "" (search-obj-str-q joe-prev-search)))
                             (read-string "Find: ")
-                          (let ((new-search (read-string (format "Find [%s]: " joe-prev-search))))
+                          (let ((new-search (read-string (format "Find [%s]: " (search-obj-str-q joe-prev-search)))))
                             (if (or (null new-search) (string= new-search ""))
-                                joe-prev-search
+                                (search-obj-str-q joe-prev-search)
                               new-search)))))
 
 ;; Buffer location for the below joe-replace code.
@@ -165,18 +179,34 @@ PREV-EDITS is a list of where previous edits occurred."
             (t (message (format "%c" result))
                (hlt-unhighlight-region reg-min (point) 'highlight))))))
 
+(defun joe-str-contains (needle haystack)
+  "T if HAYSTACK contain NEEDLE.  NEEDLE could be a regexp or char."
+  (not (null (string-match-p haystack (if (numberp needle)
+                                                  (char-to-string needle)
+                                                needle)))))
 
-(defun joe-get-find-action (prompt)
+(defun joe-get-find-action (&optional prompt)
   "If PROMPT as the user for an action.  Otherwise, return previous action."
-  (setq joe-prev-search-action (if (or prompt (null joe-prev-search))
-                                   (upcase
-                                    (read-string
-                                     "(I)gnore (R)eplace (B)ackwards Bloc(K): "))
-                                 joe-prev-search)))
+  (setq joe-prev-search (if (or prompt (null joe-prev-search))
+                            (let* ((in-string (upcase
+                                               (read-string
+                                                "(I)gnore (R)eplace (B)ackwards Bloc(K): ")))
+                                   (first-numeric (string-match-p "[0-9]" in-string)))
+                              (search-obj-create :direction (if (joe-str-contains ?B in-string)
+                                                                :backward
+                                                              :forward)
+                                                 :a (joe-str-contains ?A in-string)
+                                                 :e (joe-str-contains ?E in-string)
+                                                 :icase (joe-str-contains ?I in-string)
+                                                 :nnn (if first-numeric
+                                                          (cl-parse-integer (substring in-string first-numeric) :junk-allowed t)
+                                                        -1)
+                                                 :replace (joe-str-contains ?R in-string)))
+                          joe-prev-search)))
 
 (defun joe-find-do (action str)
   "Perform find ACTION on STR."
-  (cond ((string-match-p "R" action) ; replace
+  (cond ((joe-str-contains ?R action) ; Replace.
          (if (string-match-p "B" action)
              (joe-replace (read-string "Replace with: ")
                           str
@@ -842,7 +872,7 @@ Move mark to joestar's end of block and move point to joestar's end of block."
 
 (defun joe-fnext (str action)
   "Repeat previous search on STR and perform previous ACTION."
-  (interactive (list joe-prev-search (joe-get-find-action nil)))
+  (interactive (list joe-prev-search (joe-get-find-action)))
   (joe-find-do action str))
 
 ; TODO does not replace yet
