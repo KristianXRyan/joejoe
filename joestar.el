@@ -759,51 +759,53 @@ Move mark to joestar's end of block and move point to joestar's end of block."
       (previous-buffer)
       (other-window -1)))
 
-(defun joe-setmark (sid)
+(defun joe-setmark (id)
   "Set mark SID."
-  (interactive "sSet Mark (0-9): ")
-  (let ((id (string-to-number sid)))
-    (cond
-     ((= id 0)
-      (progn
-        (setq joe-mark-0 (point-marker))
-        (message "Mark 0 set.")))
-     ((= id 1)
-      (progn
-        (setq joe-mark-1 (point-marker))
-        (message "Mark 1 set.")))
-     ((= id 2)
-      (progn
-        (setq joe-mark-2 (point-marker))
-        (message "Mark 2 set.")))
-     ((= id 3)
-      (progn
-        (setq joe-mark-3 (point-marker))
-        (message "Mark 3 set.")))
-     ((= id 4)
-      (progn
-        (setq joe-mark-4 (point-marker))
-        (message "Mark 4 set.")))
-     ((= id 5)
-      (progn
-        (setq joe-mark-5 (point-marker))
-        (message "Mark 5 set.")))
-     ((= id 6)
-      (progn
-        (setq joe-mark-6 (point-marker))
-        (message "Mark 6 set.")))
-     ((= id 7)
-      (progn
-        (setq joe-mark-7 (point-marker))
-        (message "Mark 7 set.")))
-     ((= id 8)
-      (progn
-        (setq joe-mark-8 (point-marker))
-        (message "Mark 8 set.")))
-     ((= id 9)
-      (progn
-        (setq joe-mark-9 (point-marker))
-        (message "Mark 9 set."))))))
+  (interactive (list (read-key "sSet Mark (0-9): ")))
+  (cond
+   ((symbolp id)
+    ;; TODO handle this.
+    nil)
+   ((= id ?0)
+    (progn
+      (setq joe-mark-0 (point-marker))
+      (message "Mark 0 set.")))
+   ((= id ?1)
+    (progn
+      (setq joe-mark-1 (point-marker))
+      (message "Mark 1 set.")))
+   ((= id ?2)
+    (progn
+      (setq joe-mark-2 (point-marker))
+      (message "Mark 2 set.")))
+   ((= id ?3)
+    (progn
+      (setq joe-mark-3 (point-marker))
+      (message "Mark 3 set.")))
+   ((= id ?4)
+    (progn
+      (setq joe-mark-4 (point-marker))
+      (message "Mark 4 set.")))
+   ((= id ?5)
+    (progn
+      (setq joe-mark-5 (point-marker))
+      (message "Mark 5 set.")))
+   ((= id ?6)
+    (progn
+      (setq joe-mark-6 (point-marker))
+      (message "Mark 6 set.")))
+   ((= id ?7)
+    (progn
+      (setq joe-mark-7 (point-marker))
+      (message "Mark 7 set.")))
+   ((= id ?8)
+    (progn
+      (setq joe-mark-8 (point-marker))
+      (message "Mark 8 set.")))
+   ((= id ?9)
+    (progn
+      (setq joe-mark-9 (point-marker))
+      (message "Mark 9 set.")))))
 
 (defun joe-gomark0 ()
   "Goto mark 0."
