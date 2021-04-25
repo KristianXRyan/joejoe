@@ -155,14 +155,14 @@ PREV-EDITS is a list of where previous edits occurred."
           ;; Go back. Undo the last deletion.
           ;; TODO maybe use undo-tree for this
           ((= result ?B) (let ((last-locale (car prev-edits))
-                               (pnt-positioner (if back
-                                                   #'+
-                                                 #'-)))
+                               (str-r-len (* (length str-r) (if back -1 1)))
+                               (str-q-len (* (length str-q) (if back 1 -1))))
+                               
                            (hlt-unhighlight-region reg-min pnt 'highlight)
                            (when (not (null last-locale))
-                             (goto-char (funcall pnt-positioner (point) (length str-q)))
-                             (goto-char (funcall pnt-positioner last-locale (length str-q)))
-                             (kill-region (point) (funcall pnt-positioner (point) (* (length str-r) -1)))
+                             (goto-char (+ (point) str-q-len))
+                             (goto-char (+  last-locale str-q-len))
+                             (kill-region (point) (+ (point) str-r-len))
                              (insert str-q)
                              (joe-replace (point) back (cdr prev-edits))))))))
 
