@@ -123,18 +123,20 @@
 If NOASK is set just replace string without asking the user.
 If BACK is t then move backwards, if nil then forwards.
 PREV-EDITS is a list of where previous edits occurred."
-  (message (format "q is: %s, r is %s" (search-obj-str-q joe-prev-search) (search-obj-str-r joe-prev-search)))
-  (hlt-highlight-region (- pos (length (search-obj-str-q joe-prev-search))) pos 'highlight)
   (let* ((str-r (search-obj-str-r joe-prev-search))
          (str-q (search-obj-str-q joe-prev-search))
          (back (search-obj-backwards joe-prev-search))
-         
-         (pnt (point))
-         (raw-user-answer (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))
+         (reg-max (if back
+                      (+ (point) (length str-q))
+                    (point)))
+         (reg-min (- reg-max (length str-q)))
+         (raw-user-answer
+          (progn ; Highlighted before user is queried.
+            (hlt-highlight-region reg-min reg-max 'highlight)
+            (read-key "Replace (Y)es (N)o (R)est (B)ackup?")))
          (user-answer (if (numberp raw-user-answer)
                           (upcase raw-user-answer)
                         raw-user-answer))
-         (reg-min (- pnt (length str-q)))
          (next-call (if back
                         (lambda ()
                           (search-backward str-q)
@@ -142,18 +144,18 @@ PREV-EDITS is a list of where previous edits occurred."
                       (lambda ()
                         (search-forward str-q)))))
     
-    (hlt-unhighlight-region reg-min pnt 'highlight)
+    (hlt-unhighlight-region reg-min reg-max 'highlight)
     (cond ((symbolp user-answer)
            ;; TODO do key event (like left, right, etc.)
            nil)
            ((= user-answer ?Y) (progn
-                                (kill-region pnt reg-min)
+                                (kill-region reg-max reg-min)
                                 (insert str-r)
                                 (joe-replace (funcall next-call)
-                                             noask (cons pnt prev-edits))))
+                                             noask (cons reg-max prev-edits))))
           ;; Do not modify the selection, just go to next find.
           ((= user-answer ?N)   (joe-replace (funcall next-call)
-                                             nil (cons pnt prev-edits)))
+                                             nil (cons reg-max prev-edits)))
           ;; Go back. Undo the last deletion.
           ;; TODO maybe use undo-tree for this
           ((= user-answer ?B) (let ((last-locale (car prev-edits))
@@ -259,7 +261,7 @@ PREV-EDITS is a list of where previous edits occurred."
     (cond ((search-obj-replace joe-prev-search) ; Replace.
            (setf (search-obj-str-r joe-prev-search) (read-string "Replace with: "))
            (if (search-obj-backwards joe-prev-search)
-               (joe-replace (search-backward str))
+               (joe-replace (search-backward str) t)
              (joe-replace (search-forward str))))
           ((search-obj-backwards joe-prev-search) ; Search backward.
            (search-backward str))
