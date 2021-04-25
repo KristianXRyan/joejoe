@@ -79,11 +79,12 @@
                           (:copier nil))
   (str-q "" :documentation "Query string." :type string)
   (str-r "" :documentation "Replace string." :type string)
-  (direction :forward :documentation "The direction of the search and replace." :type symbol)
+  (backwards nil :documentation "The direction of the search and replace." :type symbol)
   (a nil :documentation "If the query should include all files." :type symbol)
   (e nil :documentation "Search includes make error or grep buffers." :type symbol)
   (icase nil :documentation "If the search should ignore case." :type symbol)
   (replace nil :documentation "If the search is for replacing strings." :type symbol)
+  (b nil :documentation "If the search is for replacing strings." :type symbol)
   (nnn -1 :documentation "Specified line number of query." :type number))
 
 
@@ -108,49 +109,75 @@
 
 (defun joe-get-findstr ()
   "Ask user for search words."
-  (setq joe-prev-search (if (or (null joe-prev-search) (string= "" (search-obj-str-q joe-prev-search)))
-                            (read-string "Find: ")
-                          (let ((new-search (read-string (format "Find [%s]: " (search-obj-str-q joe-prev-search)))))
-                            (if (or (null new-search) (string= new-search ""))
-                                (search-obj-str-q joe-prev-search)
-                              new-search)))))
+  (setf (search-obj-str-q joe-prev-search)
+        (if (or (null joe-prev-search) (string= "" (search-obj-str-q joe-prev-search)))
+            (read-string "Find: ")
+          (let ((new-search (read-string (format "Find [%s]: " (search-obj-str-q joe-prev-search)))))
+            (if (or (null new-search) (string= new-search ""))
+                (search-obj-str-q joe-prev-search)
+              new-search)))))
 
 ;; Buffer location for the below joe-replace code.
-(cl-defstruct (buf-location (:constructor buf-location-create)
-                           (:copier nil))
-  position direction str)
-
-;;TODO fix minor bug where "backing" to the last entry takes the point too far.
-(defun joe-replace (str2 str1 pos &optional noask back prev-edits)
-  "Prompt user, replace STR1 with STR2 at POS.
+(defun joe-replace (pos &optional noask prev-edits)
+  "Prompt the user for an action and replace str-q with str-r at POS.
 If NOASK is set just replace string without asking the user.
 If BACK is t then move backwards, if nil then forwards.
 PREV-EDITS is a list of where previous edits occurred."
-  (when str1
-    (hlt-highlight-region (- (point) (length str1)) (point) 'highlight)
-    (let* ((reg-min (- (point) (length str1)))
+  (message (format "q is: %s, r is %s" (search-obj-str-q joe-prev-search) (search-obj-str-r joe-prev-search)))
+  (hlt-highlight-region (- pos (length (search-obj-str-q joe-prev-search))) pos 'highlight)
+  (let* ((str-r (search-obj-str-r joe-prev-search))
+         (str-q (search-obj-str-q joe-prev-search))
+         (back (search-obj-backwards joe-prev-search))
+         
+         (pnt (point))
+         (result (if noask
+                     ?Y
+                   (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))))
+         (reg-min (- pnt (length str-q)))
+         (next-call (if back
+                        (lambda ()
+                          (search-backward (search-obj-str-q joe-prev-search))
+                          (search-forward (search-obj-str-q joe-prev-search)))
+                      (lambda ()
+                        (search-forward (search-obj-str-q joe-prev-search))))))
+    (cond ((= result ?Y) (progn
+                           (hlt-unhighlight-region reg-min pnt 'highlight)
+                           (kill-region pnt reg-min)
+                           (insert str-r)
+                           (joe-replace (funcall next-call)
+                                        noask (cons pnt prev-edits)))))))
+
+;;TODO fix minor bug where "backing" to the last entry takes the point too far.
+(defun joe-replace-og (pos &optional noask back prev-edits)
+  "Prompt user, replace STR1 with (SEARCH-OBJ-STR-R JOE-PREV-SEARCH) at POS.
+If NOASK is set just replace string without asking the user.
+If BACK is t then move backwards, if nil then forwards.
+PREV-EDITS is a list of where previous edits occurred."
+  (when (search-obj-str-q joe-prev-search)
+    (hlt-highlight-region (- (point) (length (search-obj-str-q joe-prev-search))) (point) 'highlight)
+    (let* ((reg-min (- (point) (length (search-obj-str-q joe-prev-search))))
            (result (if noask
                        ?Y
                      (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))))
-           (point-at-begin (+ (point) (length str1)))
+           (point-at-begin (+ (point) (length (search-obj-str-q joe-prev-search))))
            (next-call (if back
                           (lambda ()
-                            (search-backward str1)
-                            (search-forward str1))
+                            (search-backward (search-obj-str-q joe-prev-search))
+                            (search-forward (search-obj-str-q joe-prev-search)))
                         (lambda ()
-                          (search-forward str1))))
+                          (search-forward (search-obj-str-q joe-prev-search)))))
            (cur-point (point)))
       
       (cond ((= result ?Y) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
                              (kill-region (point) reg-min)
-                             (insert str2)
-                             (joe-replace str2 str1 (funcall next-call)
+                             (insert (search-obj-str-r joe-prev-search))
+                             (joe-replace (search-obj-str-r joe-prev-search) (search-obj-str-q joe-prev-search) (funcall next-call)
                                           noask back (cons (buf-location-create :position cur-point) prev-edits))))
             
             ((= result ?N) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
-                             (joe-replace str2 str1 (funcall next-call) noask back prev-edits)))
+                             (joe-replace (search-obj-str-r joe-prev-search) (search-obj-str-q joe-prev-search) (funcall next-call) noask back prev-edits)))
             ;; Undo the previous edits.
             ((= result ?B) 
              (let ((last-edit (if (car prev-edits)
@@ -163,19 +190,19 @@ PREV-EDITS is a list of where previous edits occurred."
                    (if (< last-edit (point))
                        nil
                      nil)
-                 (goto-char (- (point) (length str2)))
-                 (search-backward str1)
+                 (goto-char (- (point) (length (search-obj-str-r joe-prev-search))))
+                 (search-backward (search-obj-str-q joe-prev-search))
                  (if (> last-edit (point))
                      (progn
                        (goto-char last-edit)
-                       (kill-region (point) (- (point) (length str2)))
-                       (insert str1))
-                   (goto-char (+ (point) (length str1)))))
-               (joe-replace str2 str1 (point) noask back (cdr prev-edits))))
+                       (kill-region (point) (- (point) (length (search-obj-str-r joe-prev-search))))
+                       (insert (search-obj-str-q joe-prev-search)))
+                   (goto-char (+ (point) (length (search-obj-str-q joe-prev-search))))))
+               (joe-replace (search-obj-str-r joe-prev-search) (search-obj-str-q joe-prev-search) (point) noask back (cdr prev-edits))))
             
             ((= result ?R) (progn
                              (hlt-unhighlight-region reg-min (point) 'highlight)
-                             (replace-string str1 str2)))
+                             (replace-string (search-obj-str-q joe-prev-search) (search-obj-str-r joe-prev-search))))
             (t (message (format "%c" result))
                (hlt-unhighlight-region reg-min (point) 'highlight))))))
 
@@ -192,41 +219,37 @@ PREV-EDITS is a list of where previous edits occurred."
                                                (read-string
                                                 "(I)gnore (R)eplace (B)ackwards Bloc(K): ")))
                                    (first-numeric (string-match-p "[0-9]" in-string)))
-                              (search-obj-create :direction (if (joe-str-contains ?B in-string)
-                                                                :backward
-                                                              :forward)
+                              (search-obj-create :str-q (search-obj-str-q joe-prev-search)
+                                                 :backwards (joe-str-contains ?B in-string)
                                                  :a (joe-str-contains ?A in-string)
                                                  :e (joe-str-contains ?E in-string)
                                                  :icase (joe-str-contains ?I in-string)
+                                                 :b (joe-str-contains ?K in-string)
                                                  :nnn (if first-numeric
                                                           (cl-parse-integer (substring in-string first-numeric) :junk-allowed t)
                                                         -1)
                                                  :replace (joe-str-contains ?R in-string)))
                           joe-prev-search)))
 
-(defun joe-find-do (action str)
+(defun joe-find-do ()
   "Perform find ACTION on STR."
-  (cond ((joe-str-contains ?R action) ; Replace.
-         (if (string-match-p "B" action)
-             (joe-replace (read-string "Replace with: ")
-                          str
-                          (progn
-                            (search-backward str)
-                            (search-forward str))
-                          nil
-                          t)
-           (joe-replace (read-string "Replace with: ")
-                        str
-                        (search-forward str))))
-         ((string= action "B") ; search backward
-         (search-backward str))
-        ((string= action "K") ; search block TODO
-         (progn
-           (call-interactively 'narrow-to-region)
-           (goto-char (point-min))
-           (search-forward str)
-           (widen)))
-        (t (search-forward str)))) ; default, search forward
+  (let* ((str (search-obj-str-q joe-prev-search)))
+    (cond ((search-obj-replace joe-prev-search) ; Replace.
+           (if (search-obj-backwards joe-prev-search)
+               (progn
+                 (setf (search-obj-str-r joe-prev-search) (read-string "Replace with:"))
+                 (joe-replace (search-forward)))
+             (setf (search-obj-str-r joe-prev-search) (read-string "Replace with: "))
+             (joe-replace (search-forward str))))
+          ((search-obj-backwards joe-prev-search) ; Search backward.
+           (search-backward str))
+          ((search-obj-b joe-prev-search)
+           (progn
+             (call-interactively 'narrow-to-region)
+             (goto-char (point-min))
+             (search-forward str)
+             (widen)))
+          (t (search-forward str))))) ; default, search forward
 
 (defun joe-shift-region (distance)
   "Shift the region DISTANCE number of whitespace."
@@ -865,21 +888,17 @@ Move mark to joestar's end of block and move point to joestar's end of block."
     (insert (shell-command-to-string com))
     (goto-char joe-cur-mark)))
 
-(defun joe-qrepl (str)
-  "Search and replace STR."
-  (interactive (list (joe-get-findstr)))
-  (joe-find-do joe-prev-search-action str))
-
 (defun joe-fnext (str action)
   "Repeat previous search on STR and perform previous ACTION."
-  (interactive (list joe-prev-search (joe-get-find-action)))
-  (joe-find-do action str))
+  (joe-find-do))
 
 ; TODO does not replace yet
-(defun joe-ffirst (str action)
+(defun joe-ffirst ()
   "Find next STR, perform ACTION."
-  (interactive (list (joe-get-findstr) (joe-get-find-action t)))
-  (joe-find-do action str))
+  (interactive)
+  (joe-get-findstr)
+  (joe-get-find-action t)
+  (joe-find-do))
 
 (defun joe-stat ()
   "Print status to the echo-area."
