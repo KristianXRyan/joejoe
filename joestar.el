@@ -136,16 +136,35 @@ PREV-EDITS is a list of where previous edits occurred."
          (reg-min (- pnt (length str-q)))
          (next-call (if back
                         (lambda ()
-                          (search-backward (search-obj-str-q joe-prev-search))
-                          (search-forward (search-obj-str-q joe-prev-search)))
+                          (search-backward str-q)
+                          (search-forward str-q))
                       (lambda ()
-                        (search-forward (search-obj-str-q joe-prev-search))))))
+                        (search-forward str-q)))))
+  
     (cond ((= result ?Y) (progn
                            (hlt-unhighlight-region reg-min pnt 'highlight)
                            (kill-region pnt reg-min)
                            (insert str-r)
                            (joe-replace (funcall next-call)
-                                        noask (cons pnt prev-edits)))))))
+                                        noask (cons pnt prev-edits))))
+          ;; Do not modify the selection, just go to next find.
+          ((= result ?N) (progn
+                           (hlt-unhighlight-region reg-min pnt 'highlight)
+                           (joe-replace (funcall next-call)
+                                        nil (cons pnt prev-edits))))
+          ;; Go back. Undo the last deletion.
+          ;; TODO maybe use undo-tree for this
+          ((= result ?B) (let ((last-locale (car prev-edits))
+                               (pnt-positioner (if back
+                                                   #'+
+                                                 #'-)))
+                           (hlt-unhighlight-region reg-min pnt 'highlight)
+                           (when (not (null last-locale))
+                             (goto-char (funcall pnt-positioner (point) (length str-q)))
+                             (goto-char (funcall pnt-positioner last-locale (length str-q)))
+                             (kill-region (point) (funcall pnt-positioner (point) (* (length str-r) -1)))
+                             (insert str-q)
+                             (joe-replace (point) back (cdr prev-edits))))))))
 
 ;;TODO fix minor bug where "backing" to the last entry takes the point too far.
 (defun joe-replace-og (pos &optional noask back prev-edits)
