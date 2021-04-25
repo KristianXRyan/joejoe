@@ -130,9 +130,10 @@ PREV-EDITS is a list of where previous edits occurred."
          (back (search-obj-backwards joe-prev-search))
          
          (pnt (point))
-         (result (if noask
-                     ?Y
-                   (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))))
+         (raw-user-answer (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))
+         (user-answer (if (numberp raw-user-answer)
+                          (upcase raw-user-answer)
+                        raw-user-answer))
          (reg-min (- pnt (length str-q)))
          (next-call (if back
                         (lambda ()
@@ -140,31 +141,31 @@ PREV-EDITS is a list of where previous edits occurred."
                           (search-forward str-q))
                       (lambda ()
                         (search-forward str-q)))))
-  
-    (cond ((= result ?Y) (progn
-                           (hlt-unhighlight-region reg-min pnt 'highlight)
-                           (kill-region pnt reg-min)
-                           (insert str-r)
-                           (joe-replace (funcall next-call)
-                                        noask (cons pnt prev-edits))))
+    
+    (hlt-unhighlight-region reg-min pnt 'highlight)
+    (cond ((symbolp user-answer)
+           ;; TODO do key event (like left, right, etc.)
+           nil)
+           ((= user-answer ?Y) (progn
+                                (kill-region pnt reg-min)
+                                (insert str-r)
+                                (joe-replace (funcall next-call)
+                                             noask (cons pnt prev-edits))))
           ;; Do not modify the selection, just go to next find.
-          ((= result ?N) (progn
-                           (hlt-unhighlight-region reg-min pnt 'highlight)
-                           (joe-replace (funcall next-call)
-                                        nil (cons pnt prev-edits))))
+          ((= user-answer ?N)   (joe-replace (funcall next-call)
+                                             nil (cons pnt prev-edits)))
           ;; Go back. Undo the last deletion.
           ;; TODO maybe use undo-tree for this
-          ((= result ?B) (let ((last-locale (car prev-edits))
-                               (str-r-len (* (length str-r) (if back -1 1)))
-                               (str-q-len (* (length str-q) (if back 1 -1))))
-                               
-                           (hlt-unhighlight-region reg-min pnt 'highlight)
-                           (when (not (null last-locale))
-                             (goto-char (+ (point) str-q-len))
-                             (goto-char (+  last-locale str-q-len))
-                             (kill-region (point) (+ (point) str-r-len))
-                             (insert str-q)
-                             (joe-replace (point) back (cdr prev-edits))))))))
+          ((= user-answer ?B) (let ((last-locale (car prev-edits))
+                                    (str-r-len (* (length str-r) (if back -1 1)))
+                                    (str-q-len (* (length str-q) (if back 1 -1))))
+                                
+                                (when (not (null last-locale))
+                                  (goto-char (+ (point) str-q-len))
+                                  (goto-char (+  last-locale str-q-len))
+                                  (kill-region (point) (+ (point) str-r-len))
+                                  (insert str-q)
+                                  (joe-replace (point) back (cdr prev-edits))))))))
 
 ;;TODO fix minor bug where "backing" to the last entry takes the point too far.
 (defun joe-replace-og (pos &optional noask back prev-edits)
@@ -187,16 +188,16 @@ PREV-EDITS is a list of where previous edits occurred."
                           (search-forward (search-obj-str-q joe-prev-search)))))
            (cur-point (point)))
       
+      (hlt-unhighlight-region reg-min (point) 'highlight)
       (cond ((= result ?Y) (progn
-                             (hlt-unhighlight-region reg-min (point) 'highlight)
                              (kill-region (point) reg-min)
                              (insert (search-obj-str-r joe-prev-search))
                              (joe-replace (search-obj-str-r joe-prev-search) (search-obj-str-q joe-prev-search) (funcall next-call)
                                           noask back (cons (buf-location-create :position cur-point) prev-edits))))
             
-            ((= result ?N) (progn
-                             (hlt-unhighlight-region reg-min (point) 'highlight)
-                             (joe-replace (search-obj-str-r joe-prev-search) (search-obj-str-q joe-prev-search) (funcall next-call) noask back prev-edits)))
+            ((= result ?N) (joe-replace (search-obj-str-r joe-prev-search)
+                                        (search-obj-str-q joe-prev-search)
+                                        (funcall next-call) noask back prev-edits))
             ;; Undo the previous edits.
             ((= result ?B) 
              (let ((last-edit (if (car prev-edits)
