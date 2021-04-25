@@ -228,38 +228,38 @@ PREV-EDITS is a list of where previous edits occurred."
 
 (defun joe-str-contains (needle haystack)
   "T if HAYSTACK contain NEEDLE.  NEEDLE could be a regexp or char."
-  (not (null (string-match-p haystack (if (numberp needle)
-                                                  (char-to-string needle)
-                                                needle)))))
+  (not (null (string-match-p (if (numberp needle)
+                                 (char-to-string needle)
+                               needle)
+                             haystack))))
 
-(defun joe-get-find-action (&optional prompt)
-  "If PROMPT as the user for an action.  Otherwise, return previous action."
-  (setq joe-prev-search (if (or prompt (null joe-prev-search))
-                            (let* ((in-string (upcase
-                                               (read-string
-                                                "(I)gnore (R)eplace (B)ackwards Bloc(K): ")))
-                                   (first-numeric (string-match-p "[0-9]" in-string)))
-                              (search-obj-create :str-q (search-obj-str-q joe-prev-search)
-                                                 :backwards (joe-str-contains ?B in-string)
-                                                 :a (joe-str-contains ?A in-string)
-                                                 :e (joe-str-contains ?E in-string)
-                                                 :icase (joe-str-contains ?I in-string)
-                                                 :b (joe-str-contains ?K in-string)
-                                                 :nnn (if first-numeric
-                                                          (cl-parse-integer (substring in-string first-numeric) :junk-allowed t)
-                                                        -1)
-                                                 :replace (joe-str-contains ?R in-string)))
-                          joe-prev-search)))
+(defun joe-get-find-action ()
+  "Ask the user for an action."
+  (setq joe-prev-search
+        (let* ((in-string (upcase
+                           (read-string
+                            "(I)gnore (R)eplace (B)ackwards Bloc(K): ")))
+               (first-numeric (string-match-p "[0-9]" in-string)))
+          (if (string= "" in-string)
+              (search-obj-create :str-q (search-obj-str-q joe-prev-search))
+            (search-obj-create :str-q (search-obj-str-q joe-prev-search)
+                               :backwards (joe-str-contains ?B in-string)
+                               :a (joe-str-contains ?A in-string)
+                               :e (joe-str-contains ?E in-string)
+                               :icase (joe-str-contains ?I in-string)
+                               :b (joe-str-contains ?K in-string)
+                               :nnn (if first-numeric
+                                        (cl-parse-integer (substring in-string first-numeric) :junk-allowed t)
+                                      -1)
+                               :replace (joe-str-contains ?R in-string))))))
 
 (defun joe-find-do ()
-  "Perform find ACTION on STR."
+  "Set up joe-replace."
   (let* ((str (search-obj-str-q joe-prev-search)))
     (cond ((search-obj-replace joe-prev-search) ; Replace.
+           (setf (search-obj-str-r joe-prev-search) (read-string "Replace with: "))
            (if (search-obj-backwards joe-prev-search)
-               (progn
-                 (setf (search-obj-str-r joe-prev-search) (read-string "Replace with:"))
-                 (joe-replace (search-forward)))
-             (setf (search-obj-str-r joe-prev-search) (read-string "Replace with: "))
+               (joe-replace (search-backward str))
              (joe-replace (search-forward str))))
           ((search-obj-backwards joe-prev-search) ; Search backward.
            (search-backward str))
@@ -917,7 +917,7 @@ Move mark to joestar's end of block and move point to joestar's end of block."
   "Find next STR, perform ACTION."
   (interactive)
   (joe-get-findstr)
-  (joe-get-find-action t)
+  (joe-get-find-action)
   (joe-find-do))
 
 (defun joe-stat ()
