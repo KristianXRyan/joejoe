@@ -139,8 +139,7 @@ PREV-EDITS is a list of where previous edits occurred."
                         raw-user-answer))
          (next-call (if back
                         (lambda ()
-                          (search-backward str-q)
-                          (search-forward str-q))
+                          (search-backward str-q))
                       (lambda ()
                         (search-forward str-q)))))
     
