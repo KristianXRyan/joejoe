@@ -165,77 +165,23 @@ PREV-EDITS is a list of where previous edits occurred."
                                                        prev-edits)))
           ;; Go back. Undo the last deletion.
           ;; TODO maybe use undo-tree for this
-          ((= user-answer ?B) (let ((last-locale (find-obj-linum (car prev-edits)))
-                                    (was-no-edit (not (find-obj-was-edit (car prev-edits))))
-                                    (str-r-len (* (length str-r) (if back -1 1)))
-                                    (str-q-len (* (length str-q) (if back 1 -1))))
+          ((= user-answer ?B) (let* ((last-edit (car prev-edits))
+                                     (last-locale (when last-edit
+                                                    (find-obj-linum last-edit)))
+                                     (str-r-len (* (length str-r) (if back -1 1)))
+                                     (str-q-len (* (length str-q) (if back 1 -1))))
                                 
-                                (when (not (null last-locale))
+                                (unless (null last-locale)
+                                  (when back
+                                    (message "Back")
+                                    (backward-char (length str-q)))
                                   (goto-char (+  last-locale str-q-len))
-                                  (if was-no-edit
+                                  (if (not (find-obj-was-edit (car prev-edits)))
                                       (forward-char (* str-q-len -1))
                                     (kill-region (point) (+ (point) str-r-len))
                                     (insert str-q))
                                   (joe-replace (point) back (cdr prev-edits))))))))
 
-;;TODO fix minor bug where "backing" to the last entry takes the point too far.
-(defun joe-replace-og (pos &optional noask back prev-edits)
-  "Prompt user, replace STR1 with (SEARCH-OBJ-STR-R JOE-PREV-SEARCH) at POS.
-If NOASK is set just replace string without asking the user.
-If BACK is t then move backwards, if nil then forwards.
-PREV-EDITS is a list of where previous edits occurred."
-  (when (search-obj-str-q joe-prev-search)
-    (hlt-highlight-region (- (point) (length (search-obj-str-q joe-prev-search))) (point) 'highlight)
-    (let* ((reg-min (- (point) (length (search-obj-str-q joe-prev-search))))
-           (result (if noask
-                       ?Y
-                     (upcase (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))))
-           (point-at-begin (+ (point) (length (search-obj-str-q joe-prev-search))))
-           (next-call (if back
-                          (lambda ()
-                            (search-backward (search-obj-str-q joe-prev-search))
-                            (search-forward (search-obj-str-q joe-prev-search)))
-                        (lambda ()
-                          (search-forward (search-obj-str-q joe-prev-search)))))
-           (cur-point (point)))
-      
-      (hlt-unhighlight-region reg-min (point) 'highlight)
-      (cond ((= result ?Y) (progn
-                             (kill-region (point) reg-min)
-                             (insert (search-obj-str-r joe-prev-search))
-                             (joe-replace (search-obj-str-r joe-prev-search) (search-obj-str-q joe-prev-search) (funcall next-call)
-                                          noask back (cons (buf-location-create :position cur-point) prev-edits))))
-            
-            ((= result ?N) (joe-replace (search-obj-str-r joe-prev-search)
-                                        (search-obj-str-q joe-prev-search)
-                                        (funcall next-call) noask back prev-edits))
-            ;; Undo the previous edits.
-            ((= result ?B) 
-             (let ((last-edit (if (car prev-edits)
-                                  (car prev-edits)
-                                (if back
-                                    (point-max)
-                                  (point-min)))))
-               (hlt-unhighlight-region reg-min (point) 'highlight)
-               (if back
-                   (if (< last-edit (point))
-                       nil
-                     nil)
-                 (goto-char (- (point) (length (search-obj-str-r joe-prev-search))))
-                 (search-backward (search-obj-str-q joe-prev-search))
-                 (if (> last-edit (point))
-                     (progn
-                       (goto-char last-edit)
-                       (kill-region (point) (- (point) (length (search-obj-str-r joe-prev-search))))
-                       (insert (search-obj-str-q joe-prev-search)))
-                   (goto-char (+ (point) (length (search-obj-str-q joe-prev-search))))))
-               (joe-replace (search-obj-str-r joe-prev-search) (search-obj-str-q joe-prev-search) (point) noask back (cdr prev-edits))))
-            
-            ((= result ?R) (progn
-                             (hlt-unhighlight-region reg-min (point) 'highlight)
-                             (replace-string (search-obj-str-q joe-prev-search) (search-obj-str-r joe-prev-search))))
-            (t (message (format "%c" result))
-               (hlt-unhighlight-region reg-min (point) 'highlight))))))
 
 (defun joe-str-contains (needle haystack)
   "T if HAYSTACK contain NEEDLE.  NEEDLE could be a regexp or char."
