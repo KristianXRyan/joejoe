@@ -117,6 +117,12 @@
                 (search-obj-str-q joe-prev-search)
               new-search)))))
 
+(cl-defstruct (find-obj (:constructor find-obj-create)
+                        (:copier nil))
+  (linum 0 :documentation "Line number." :type number)
+  (was-edit nil :documentation "t if edit, nil if not" :type symbol))
+
+
 ;; Buffer location for the below joe-replace code.
 (defun joe-replace (pos &optional noask prev-edits)
   "Prompt the user for an action and replace str-q with str-r at POS.
@@ -151,21 +157,25 @@ PREV-EDITS is a list of where previous edits occurred."
                                 (kill-region reg-max reg-min)
                                 (insert str-r)
                                 (joe-replace (funcall next-call)
-                                             noask (cons reg-max prev-edits))))
+                                             noask (cons (find-obj-create :linum reg-max :was-edit t)
+                                                         prev-edits))))
           ;; Do not modify the selection, just go to next find.
           ((= user-answer ?N)   (joe-replace (funcall next-call)
-                                             nil (cons reg-max prev-edits)))
+                                             nil (cons (find-obj-create :linum reg-max)
+                                                       prev-edits)))
           ;; Go back. Undo the last deletion.
           ;; TODO maybe use undo-tree for this
-          ((= user-answer ?B) (let ((last-locale (car prev-edits))
+          ((= user-answer ?B) (let ((last-locale (find-obj-linum (car prev-edits)))
+                                    (was-no-edit (not (find-obj-was-edit (car prev-edits))))
                                     (str-r-len (* (length str-r) (if back -1 1)))
                                     (str-q-len (* (length str-q) (if back 1 -1))))
                                 
                                 (when (not (null last-locale))
-                                  (goto-char (+ (point) str-q-len))
                                   (goto-char (+  last-locale str-q-len))
-                                  (kill-region (point) (+ (point) str-r-len))
-                                  (insert str-q)
+                                  (if was-no-edit
+                                      (forward-char (* str-q-len -1))
+                                    (kill-region (point) (+ (point) str-r-len))
+                                    (insert str-q))
                                   (joe-replace (point) back (cdr prev-edits))))))))
 
 ;;TODO fix minor bug where "backing" to the last entry takes the point too far.
