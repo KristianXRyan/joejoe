@@ -171,15 +171,17 @@ PREV-EDITS is a list of where previous edits occurred."
                                      (str-r-len (* (length str-r) (if back -1 1)))
                                      (str-q-len (* (length str-q) (if back 1 -1))))
                                 
-                                (unless (null last-locale)
+                                (when last-locale
                                   (when back
-                                    (message "Back")
                                     (backward-char (length str-q)))
-                                  (goto-char (+  last-locale str-q-len))
+                                  (goto-char (+  last-locale str-q-len (if back 1 0)))
                                   (if (not (find-obj-was-edit (car prev-edits)))
-                                      (forward-char (* str-q-len -1))
+                                      (forward-char (- (* str-q-len -1)
+                                                       (if back (+ str-q-len 1) 0)))
                                     (kill-region (point) (+ (point) str-r-len))
-                                    (insert str-q))
+                                    (insert str-q)
+                                    (when back
+                                      (backward-char str-q-len)))
                                   (joe-replace (point) back (cdr prev-edits))))))))
 
 
