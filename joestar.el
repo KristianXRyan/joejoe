@@ -172,12 +172,12 @@ PREV-EDITS is a list of where previous edits occurred."
                                      (str-q-len (* (length str-q) (if back 1 -1))))
                                 
                                 (when last-locale
-                                  (when back
-                                    (backward-char (length str-q)))
                                   (goto-char (+  last-locale str-q-len (if back 1 0)))
                                   (if (not (find-obj-was-edit (car prev-edits)))
                                       (forward-char (- (* str-q-len -1)
                                                        (if back (+ str-q-len 1) 0)))
+                                    (when back
+                                      (backward-char (+ str-r-len (* str-q-len 2) 1)))
                                     (kill-region (point) (+ (point) str-r-len))
                                     (insert str-q)
                                     (when back
