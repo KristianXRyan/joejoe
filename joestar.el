@@ -37,25 +37,26 @@
 (require 'cl-lib)
 
 
-;; block variables
-(defvar joe-block-mark-start nil "Start of block.")
-(defvar joe-block-mark-end   nil "End of block.")
+;; Block variables.
 
-(defvar joe-block-is         nil "If T block is set.")
-(defvar joe-block-rect       nil "If T rectangular block operations.")
-(defvar joe-block-show       nil "If T block is showed in blockface face.")
+(defvar-local joe-block-mark-start nil "Start of block.")
+(defvar-local joe-block-mark-end   nil "End of block.")
+
+(defvar-local joe-block-up         nil "T if block is activated.")
+(defvar-local joe-block-rect       nil "T if the block is rectangular.")
 
 (defvar joe-stream           nil "Contains last defined Block.  Stream.")
 (defvar joe-rect             nil "Contains last defined Block.  Rectangle.")
 
+(defvar-local joe-markbs nil "List of previous markbs.")
+(defvar-local joe-markks nil "List of previous markks.")
+
 ;; For converting the block to region.
-(defvar joe-last-emacs-mark  nil "The last position of mark.")
-(defvar joe-last-emacs-point nil "The last position of point.")
+(defvar-local joe-last-emacs-mark  nil "The last position of mark.")
+(defvar-local joe-last-emacs-point nil "The last position of point.")
 
 (defvar joe-ctrl-selection   nil "0 if not control-selecting, 1 if ctrl selecting.")
 
-(make-variable-buffer-local 'joe-last-emacs-mark)
-(make-variable-buffer-local 'joe-last-emacs-point)
 
 ;;; set mark variables
 (defvar-local joe-mark-0 nil "Mark 0.")
@@ -102,6 +103,14 @@
 (defvar joe-macro-7 nil "Macro 7.")
 (defvar joe-macro-8 nil "Macro 8.")
 (defvar joe-macro-9 nil "Macro 9.")
+
+(defface blockface
+ '((t :foreground  "gainsboro"
+       :background "dim gray"
+       ))
+  "Face for joestar-blocks."
+  :group 'joestar-mode)
+
 
 ;; non-interactive helper functions
 ;; these functions exist to break-up functionality and do not necessarily
@@ -254,18 +263,6 @@ PREV-EDITS is a list of where previous edits occurred."
         ((= ?9 name) joe-macro-9)
         (t nil)))
 
-(defun joe-block-test ()
-  "Test if there is a Block or Start/End in current buffer."
-  (if (and joe-block-mark-start joe-block-mark-end)
-      (if (not (= (- joe-block-mark-end joe-block-mark-start) 0))
-	  ()
-	(message "Zero length Block..."))
-    (if joe-block-mark-start
-	(error "End of Block not set")
-      (if joe-block-mark-end
-	  (error "Start of Block not set")
-      (error "No Block")))))
-
 (defun joe-block-to-region()
   "Convert the joe-block into region."
   (setq joe-last-emacs-mark (mark))
@@ -287,6 +284,16 @@ PREV-EDITS is a list of where previous edits occurred."
   "Return mark and point to their original values."
   (goto-char joe-last-emacs-point)
   (set-mark joe-last-emacs-mark))
+
+(defun joe-block-set-up (unh-start unh-end)
+  "Highlight or unhighlight the block based on its state.
+UNH-START is the beginning of the previous block.
+UNH-END is the end of the previous block."
+  (when (and unh-start unh-end)
+    (hlt-unhighlight-region unh-start unh-end))
+  (when (and joe-block-up joe-block-mark-end joe-block-mark-start)
+    (hlt-highlight-region joe-block-mark-start joe-block-mark-end 'highlight)))
+
 
 ;; aliases
 (defalias 'joe-nbuf 'next-buffer)
@@ -339,104 +346,44 @@ PREV-EDITS is a list of where previous edits occurred."
 ;; BLOCKS ;;
 ;;;;;;;;;;;;
 
-(defface blockface
- '((t :foreground  "gainsboro"
-       :background "dim gray"
-       ))
-  "Face for joestar-blocks."
-  :group 'joestar-mode)
 
-(defun joe-block-unset ()
-  "Unset Block in current buffer."
+(defun joe-nmark ()
+  "Eliminate `joe-block-mark-start' and `joe-block-mark-end'."
   (interactive)
-;; normal face
-  (if (and joe-block-mark-start joe-block-mark-end)
-      (hlt-unhighlight-region joe-block-mark-start joe-block-mark-end 'highlight))
+  (when (and joe-block-mark-start joe-block-mark-end)
+    (hlt-unhighlight-region joe-block-mark-start joe-block-mark-end))
   (setq joe-block-mark-start nil
-	joe-block-mark-end nil
-	joe-block-is nil
-	joe-block-show nil
-    joe-ctrl-selection nil)
-  (message "Block unset."))
+	    joe-block-mark-end nil
+	    joe-block-up nil))
 
-(defun joe-block-new-start ()
-  "Extend Block."
-;  (interactive)
-  (joe-block-test)
-  (if (= (point) (or joe-block-mark-start joe-block-mark-end))
-      (error "Same Block")
-    (if ( < (point) joe-block-mark-end)
-	(setq joe-block-mark-start (point-marker))
-      (setq joe-block-mark-start joe-block-mark-end
-	    joe-block-mark-end (point-marker)))
-    (setq joe-rect (extract-rectangle joe-block-mark-start joe-block-mark-end)
-	joe-stream (buffer-substring joe-block-mark-start joe-block-mark-end)
-	joe-block-is t)
-    (joe-refontify)
-    (message "Block redefined. Copied to global register.")))
-
-  
-(defun joe-block-new-end ()
-  "Extend Block."
-;  (interactive)
-  (joe-block-test)
-  (if (= (point) (or joe-block-mark-start joe-block-mark-end))
-      (error "Same Block")
-    (if ( > (point) joe-block-mark-start)
-	(setq joe-block-mark-end (point-marker))
-      (setq joe-block-mark-end joe-block-mark-start
-	    joe-block-mark-start (point-marker)))
-    (setq joe-rect (extract-rectangle joe-block-mark-start joe-block-mark-end)
-	joe-stream (buffer-substring joe-block-mark-start joe-block-mark-end)
-	joe-block-is t)
-    (joe-refontify)
-    (message "Block redefined. Copied to global register.")))
-
-
-
-(defun joe-markb (&optional arg)
-  "Start of block.  With ARG redefine Start of Block."
+(defun joe-markb (&optional p)
+  "Set the start of the block.  P is a marker to the start."
   (interactive "P")
-  (if arg
-      (joe-block-new-start)
-    (if joe-block-is
-      (joe-block-unset))
-    (if (null joe-block-mark-end)
-	(progn
-	  (setq joe-block-mark-start (point-marker))
-	  (message "Block Start marked. Not End."))
-      (if ( < (point-marker) joe-block-mark-end)
-	    (setq joe-block-mark-start (point-marker))
-	(setq joe-block-mark-start joe-block-mark-end
-	      joe-block-mark-end (point-marker)))
-      (setq joe-rect (extract-rectangle joe-block-mark-start joe-block-mark-end)
-	    joe-stream (buffer-substring joe-block-mark-start joe-block-mark-end)
-	    joe-block-is t
-	    joe-block-show t)
-      
-      ;; default Block is highlighted in blockface face
-      (hlt-highlight-region joe-block-mark-start joe-block-mark-end 'highlight))))
+  (let* ((p (if p p (point-marker))))
+    (when joe-block-mark-start
+      (push joe-block-mark-start joe-markbs))
+    (setq joe-block-mark-start p)
+    (when joe-block-mark-end
+      (if (or (null joe-block-mark-end)
+              (>= joe-block-mark-start joe-block-mark-end))
+          (setq joe-block-up nil)
+        (setq joe-block-up t)))
+    (joe-block-set-up (car joe-markbs) joe-block-mark-end)))
 
-(defun joe-markk (&optional arg)
-  "End of block.  With ARG redefine End of Block."
+
+(defun joe-markk (&optional p)
+  "Set the end of the block.  P is a marker to the end."
   (interactive "P")
-  (if arg
-      (joe-block-new-end) ; unset of prev block
-    (if joe-block-is
-	(joe-block-unset))
-    (if (null joe-block-mark-start)
-	(progn
-	  (setq joe-block-mark-end (point-marker))
-	  (message "Block End marked. Not Start."))
-      (if ( > (point-marker) joe-block-mark-start)
-	  (setq joe-block-mark-end (point-marker))
-	(setq joe-block-mark-end joe-block-mark-start
-	      joe-block-mark-start (point-marker)))
-      (setq joe-rect (extract-rectangle joe-block-mark-start joe-block-mark-end)
-	    joe-stream (buffer-substring joe-block-mark-start joe-block-mark-end)
-	    joe-block-is t
-	    joe-block-show t)
-      (hlt-highlight-region joe-block-mark-start joe-block-mark-end 'highlight))))
+  (let* ((p (if p p (point-marker))))
+    (when joe-block-mark-end
+      (push joe-block-mark-end joe-markks))
+    (setq joe-block-mark-end p)
+    (when joe-block-mark-start
+      (if (or (null joe-block-mark-start)
+              (<= joe-block-mark-end joe-block-mark-start))
+          (setq joe-block-up nil)
+        (setq joe-block-up t)))
+    (joe-block-set-up joe-block-mark-start (car joe-markks))))
 
 (defun joe-markl ()
   "Mark the current line as a block."
@@ -451,16 +398,16 @@ PREV-EDITS is a list of where previous edits occurred."
 (defun joe-blkmove ()
   "Move the block to point."
   (interactive)
-  (joe-block-test)
   (let* ((blk-len (- joe-block-mark-start joe-block-mark-end))
-         (pnt (point-marker)))
-    (joe-block-to-region)
-    (call-interactively 'kill-region)
-    (goto-char pnt)
-    (yank)
-    (joe-markk)
-    (goto-char (+ (point-marker) blk-len))
-    (joe-markb)))
+         (pnt (point-marker))
+         (block-str (buffer-substring joe-block-mark-start joe-block-mark-end)))
+    (when (and joe-block-up joe-block-mark-start joe-block-mark-end)
+      (kill-region joe-block-mark-start joe-block-mark-end)
+      (goto-char pnt)
+      (insert block-str)
+      (joe-markk)
+      (goto-char (+ (point-marker) blk-len))
+      (joe-markb))))
 
  ;; converts the block to region and then kills the region
 (defun joe-blkdel () ; TODO option to not save the block in kill ring
