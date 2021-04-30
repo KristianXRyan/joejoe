@@ -148,7 +148,8 @@ PREV-EDITS is a list of where previous edits occurred."
          (raw-user-answer
           (progn ; Highlighted before user is queried.
             (hlt-highlight-region reg-min reg-max 'highlight)
-            (read-key "Replace (Y)es (N)o (R)est (B)ackup?")))
+            (if noask ?Y
+              (read-key "Replace (Y)es (N)o (R)est (B)ackup?"))))
          (user-answer (if (numberp raw-user-answer)
                           (upcase raw-user-answer)
                         raw-user-answer))
@@ -162,12 +163,15 @@ PREV-EDITS is a list of where previous edits occurred."
     (cond ((symbolp user-answer)
            ;; TODO do key event (like left, right, etc.)
            nil)
-           ((= user-answer ?Y) (progn
-                                (kill-region reg-max reg-min)
-                                (insert str-r)
-                                (joe-replace (funcall next-call)
-                                             noask (cons (find-obj-create :linum reg-max :was-edit t)
-                                                         prev-edits))))
+          ((or (= user-answer ?Y) (= user-answer ?R))
+           (progn
+             (kill-region reg-max reg-min)
+             (insert str-r)
+             (joe-replace (funcall next-call)
+                          (when (or noask (= user-answer ?R))
+                            t)
+                          (cons (find-obj-create :linum reg-max :was-edit t)
+                                prev-edits))))
           ;; Do not modify the selection, just go to next find.
           ((= user-answer ?N)   (joe-replace (funcall next-call)
                                              nil (cons (find-obj-create :linum reg-max)
