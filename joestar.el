@@ -35,7 +35,7 @@
 
 (require 'highlight)
 (require 'cl-lib)
-
+(require 'rebinder)
 
 ;; Block variables.
 
@@ -418,7 +418,6 @@ UNH-END is the end of the previous block."
   "Delete the block.
 Move mark to joestar's end of block and move point to joestar's end of block."
   (interactive)
-  (joe-block-test)
   (joe-block-to-region)
   (call-interactively 'kill-region)
   (joe-restore-emacs-mark-and-point))
@@ -426,7 +425,6 @@ Move mark to joestar's end of block and move point to joestar's end of block."
 (defun joe-blkcpy()
   "Copy the block at point." ; TODO optionally not into the kill ring
   (interactive)
-  (joe-block-test)
   (let* ((blk-len (- joe-block-mark-start joe-block-mark-end)))
     (joe-block-to-region)
     (call-interactively 'copy-region-as-kill)
@@ -509,19 +507,6 @@ Move mark to joestar's end of block and move point to joestar's end of block."
   "Go to column COL."
   (interactive "nGo to column: ")
   (move-to-column col t))
-
-(defun joe-cancel ()
-  "Escape."
-  (interactive)
-  (unless (keyboard-escape-quit)
-    (if (= (count-windows) 2)
-      (when (y-or-n-p "Kill Emacs? ")
-          (joe-killjoe))
-    (joe-tw0))))
-
-(defun joe-debug ()
-  (interactive)
-  (message "%d" (count-windows)))
 
 (defun joe-rtn ()
   "Insert return key."
@@ -842,6 +827,17 @@ Move mark to joestar's end of block and move point to joestar's end of block."
   (interactive)
   (kill-line 0))
 
+(defun joe-abort ()
+  "Abort the current action.  Analogous to ^g in Emacs."
+  (interactive)
+  (if (and joe-block-up joe-block-mark-end joe-block-mark-start)
+      (progn
+        (setq joe-block-up nil)
+        (joe-block-set-up joe-block-mark-start joe-block-mark-end))
+    (keyboard-quit)))
+
+
+
 ;;; setting joestar's wordstar-like keybindings
 (defvar  joestar-mode-map
   (let ((joe-map (make-sparse-keymap)))
@@ -871,8 +867,8 @@ Move mark to joestar's end of block and move point to joestar's end of block."
     (define-key joe-map (kbd "C-.") 'joe-region-to-block) ; -- EXTRA
     
     ;; goto
-    (define-key joe-map (kbd "C-z") 'joe-prevword)
     (define-key joe-map (kbd "C-x") 'joe-nextword)
+    (define-key joe-map (kbd "C-z") 'joe-prevword)
     (define-key joe-map (kbd "C-k C-u") 'joe-tos)
     (define-key joe-map (kbd "C-k u") (kbd "C-k C-u"))
     (define-key joe-map (kbd "C-k C-v") 'joe-bos)
@@ -885,6 +881,7 @@ Move mark to joestar's end of block and move point to joestar's end of block."
     (define-key joe-map (kbd "C-k l") (kbd "C-k C-l"))
     
     ;; misc
+    (define-key joe-map (kbd "C-c") 'joe-abort)
     (define-key joe-map (kbd "C-k C-j") 'joe-paragraph)
     (define-key joe-map (kbd "C-k j") (kbd "C-k C-j"))
     (define-key joe-map (kbd "C-k C-a") 'center-line)
@@ -910,7 +907,6 @@ Move mark to joestar's end of block and move point to joestar's end of block."
     ;; exit
     (define-key joe-map (kbd "C-k C-x") 'joe-exsave)
     (define-key joe-map (kbd "C-k x") (kbd "C-k C-x"))
-    ;(define-key joe-map (kbd "C-g") 'joe-cancel)
     (define-key joe-map (kbd "C-k C-q") 'kill-emacs)
     (define-key joe-map (kbd "C-k q") (kbd "C-k C-q"))
 
@@ -1024,6 +1020,12 @@ Move mark to joestar's end of block and move point to joestar's end of block."
   (setq-default scroll-up-aggressively 0.01
                 scroll-down-aggressively 0.01)
 
+
+  (define-key joestar-mode-map (kbd "C-p") (rebinder-dynamic-binding "C-c"))
+  
+
+  
+  (rebinder-hook-to-mode 'joestar-mode 'joestar-mode-hook) ; Extremely important.
   
   ;; keep cursor position while scrolling
   (setq scroll-preserve-screen-position 'always)
@@ -1031,11 +1033,21 @@ Move mark to joestar's end of block and move point to joestar's end of block."
 
   (save-place-mode t)
 
+  (add-to-list 'minor-mode-overriding-map-alist (cons 'joestar-mode rebinder-mode-map))
+  (add-hook 'after-change-major-mode-hook 'rebinder-override)
+
   (unless (boundp 'joe-no-undo-tree)
     (undo-tree-mode t)))
 
 (define-globalized-minor-mode global-joestar-mode joestar-mode
   (lambda () (joestar-mode 1)))
+
+;; From rebinder.el (placed here so that C-c and C-x can be part of joestar-mode-map).
+(defun joe-override ()
+  "Add modemap to override prefix into ‘minor-mode-overriding-map-alist’."
+  (interactive)
+  (add-to-list 'minor-mode-overriding-map-alist (cons 'joestar-mode joestar-mode-map)))
+(add-hook 'after-change-major-mode-hook #'joe-override)
 
 (provide 'joestar)
 ;;; joestar.el ends here
