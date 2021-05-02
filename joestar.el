@@ -57,6 +57,10 @@
 
 (defvar joe-ctrl-selection   nil "0 if not control-selecting, 1 if ctrl selecting.")
 
+(defvar joe-is-in-minibuffer nil "T if minibuffer is active.")
+
+(defvar joe-was-started-once nil "T if joe has been initialized once.")
+
 
 ;;; set mark variables
 (defvar-local joe-mark-0 nil "Mark 0.")
@@ -130,7 +134,6 @@
                         (:copier nil))
   (linum 0 :documentation "Line number." :type number)
   (was-edit nil :documentation "t if edit, nil if not" :type symbol))
-
 
 ;; Buffer location for the below joe-replace code.
 (defun joe-replace (pos &optional noask prev-edits)
@@ -830,12 +833,24 @@ Move mark to joestar's end of block and move point to joestar's end of block."
 (defun joe-abort ()
   "Abort the current action.  Analogous to ^g in Emacs."
   (interactive)
-  (if (and joe-block-up joe-block-mark-end joe-block-mark-start)
-      (progn
-        (setq joe-block-up nil)
-        (joe-block-set-up joe-block-mark-start joe-block-mark-end))
-    (keyboard-quit)))
-
+  (cond ((and joe-block-up joe-block-mark-end joe-block-mark-start)
+         ;; Undo the block.
+         (setq joe-block-up nil)
+         (joe-block-set-up joe-block-mark-start joe-block-mark-end)
+         (setq joe-block-mark-start nil
+               joe-block-mark-end nil))
+        ;; Minibuffer quit.
+        (joe-is-in-minibuffer (minibuffer-keyboard-quit))
+        ;; Delete the current window.
+        ((> (length (window-list)) 1)
+         (let* ((bufs (mapcar 'window-buffer (window-list)))
+                (wins (window-list)))
+           (if (and (< (length (cl-delete-duplicates bufs)) (length wins))
+                    (< (length (cl-remove (window-buffer) bufs :test #'eq))
+                       (- (length bufs) 2)))
+               (kill-buffer-and-window)
+             (delete-window))))
+         (t (keyboard-quit))))
 
 
 ;;; setting joestar's wordstar-like keybindings
@@ -1021,7 +1036,8 @@ Move mark to joestar's end of block and move point to joestar's end of block."
                 scroll-down-aggressively 0.01)
 
 
-  (define-key joestar-mode-map (kbd "C-p") (rebinder-dynamic-binding "C-c"))
+  (define-key joestar-mode-map (kbd "C-b") (rebinder-dynamic-binding "C-c"))
+  (define-key joestar-mode-map (kbd "C-q") (rebinder-dynamic-binding "C-x"))
   
 
   
@@ -1035,6 +1051,15 @@ Move mark to joestar's end of block and move point to joestar's end of block."
 
   (add-to-list 'minor-mode-overriding-map-alist (cons 'joestar-mode rebinder-mode-map))
   (add-hook 'after-change-major-mode-hook 'rebinder-override)
+
+  ;; Set up C-c for the minibuffer.
+  ;; TODO strange bug where C-c does not work in the minibuffer the first time it's started.
+  (unless joe-was-started-once
+    (add-hook 'minibuffer-setup-hook #'(lambda ()
+                                         (setq joe-is-in-minibuffer t)))
+    (add-hook 'minibuffer-exit-hook #'(lambda ()
+                                        (setq joe-is-in-minibuffer nil)))
+    (setq joe-was-started-once t))
 
   (unless (boundp 'joe-no-undo-tree)
     (undo-tree-mode t)))
